@@ -1,0 +1,252 @@
+@import "tailwindcss";
+
+:root {
+  /* Ink family — every border/shadow derives from this hue, not neutral gray */
+  --ink: #182430;
+  --ink-70: rgba(24, 36, 48, 0.7);
+  --muted: #5b6b7a;
+  --line: rgba(24, 36, 48, 0.13);
+  --line-strong: rgba(24, 36, 48, 0.22);
+
+  --paper: #fafaf7;
+  --surface: #ffffff;
+  --surface-2: #f3f1ea;
+
+  /* Brand: institutional indigo carries the app; marigold is the spark accent */
+  --indigo: #1f3a5f;
+  --indigo-2: #16304d;
+  --indigo-wash: #eaf0f7;
+  --marigold: #e08a1e;
+  --marigold-2: #c4740f;
+  --marigold-wash: #fdf1de;
+  --banyan: #2e6b4f;
+  --banyan-wash: #e9f4ee;
+  --vermillion: #b23a32;
+  --vermillion-wash: #fbeae8;
+
+  --primary: var(--indigo);
+  --primary-2: var(--indigo-2);
+  --accent: var(--marigold);
+  --ok: var(--banyan);
+  --ok-bg: var(--banyan-wash);
+  --warn: var(--marigold-2);
+  --warn-bg: var(--marigold-wash);
+  --danger: var(--vermillion);
+  --danger-bg: var(--vermillion-wash);
+  --info: var(--indigo);
+  --info-bg: var(--indigo-wash);
+  --border: var(--line);
+  --bg: var(--paper);
+
+  /* legacy tokens kept so pre-existing markup keeps working under the new palette */
+  --paper-2: var(--surface-2);
+  --spine: var(--primary);
+  --spine-2: var(--primary-2);
+  --stamp: var(--accent);
+  --rule: var(--info);
+}
+
+@theme inline {
+  --color-ink: var(--ink);
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-primary: var(--primary);
+  --color-accent: var(--accent);
+  --color-danger: var(--danger);
+  --color-spine: var(--spine);
+  --color-stamp: var(--stamp);
+  --color-rule: var(--rule);
+  --font-display: var(--font-display);
+  --font-sans: var(--font-body);
+  --font-mono: var(--font-mono);
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: var(--font-body), "Public Sans", sans-serif;
+  min-height: 100%;
+}
+
+a { color: inherit; text-decoration: none; }
+
+button, input, select, textarea { font: inherit; }
+
+button { cursor: pointer; }
+
+input, select, textarea {
+  border-radius: 8px;
+}
+
+input:focus-visible, select:focus-visible, textarea:focus-visible, button:focus-visible, a:focus-visible {
+  outline: 2px solid var(--marigold);
+  outline-offset: 2px;
+}
+
+::selection { background: var(--marigold-wash); color: var(--ink); }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { transition-duration: 0.01ms !important; animation-duration: 0.01ms !important; }
+}
+
+/* ---- Card: the "desk tab" — a slim colored spine like a file pulled from a cabinet ---- */
+.card {
+  position: relative;
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  border-radius: 10px;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease, transform 0.16s ease;
+}
+
+.card-hover { cursor: pointer; }
+.card-hover:hover {
+  border-left-color: var(--indigo);
+  box-shadow: 0 10px 24px -12px rgba(24, 36, 48, 0.22);
+  transform: translateY(-1px);
+}
+
+.card-accent-ok { border-left-color: var(--ok); }
+.card-accent-warn { border-left-color: var(--warn); }
+.card-accent-danger { border-left-color: var(--danger); }
+.card-accent-brand { border-left-color: var(--marigold); }
+
+/* Legacy alias */
+.docket {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  border-left: 3px solid var(--line-strong);
+  border-radius: 10px;
+  transition: border-color 0.16s ease, box-shadow 0.16s ease;
+}
+.docket:hover { border-left-color: var(--indigo); box-shadow: 0 10px 24px -12px rgba(24, 36, 48, 0.22); }
+
+/* ---- Buttons ---- */
+.btn-primary {
+  background: var(--indigo);
+  color: #fff;
+  border-radius: 8px;
+  transition: background-color 0.15s ease, transform 0.1s ease, box-shadow 0.15s ease;
+  box-shadow: 0 1px 2px rgba(24, 36, 48, 0.12);
+}
+.btn-primary:hover { background: var(--indigo-2); box-shadow: 0 6px 16px -6px rgba(31, 58, 95, 0.5); }
+.btn-primary:active { transform: translateY(1px); }
+.btn-primary:disabled { opacity: 0.55; cursor: not-allowed; transform: none; }
+
+.btn-outline {
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--ink);
+  border-radius: 8px;
+  transition: border-color 0.15s ease, background-color 0.15s ease, color 0.15s ease;
+}
+.btn-outline:hover { border-color: var(--indigo); background: var(--indigo-wash); color: var(--indigo-2); }
+
+.btn-danger {
+  background: transparent;
+  border: 1px solid var(--danger);
+  color: var(--danger);
+  border-radius: 8px;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.btn-danger:hover { background: var(--danger); color: #fff; }
+
+/* Legacy alias for the historical "spine" primary button */
+.spine {
+  background: var(--indigo);
+  color: #fff;
+  border-radius: 8px;
+  transition: background-color 0.15s ease, box-shadow 0.15s ease;
+}
+.spine:hover { background: var(--indigo-2); box-shadow: 0 6px 16px -6px rgba(31, 58, 95, 0.5); }
+
+/* ---- Status pill / stamp ---- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  border: 1px solid transparent;
+}
+.pill-neutral { background: var(--surface-2); color: var(--muted); border-color: var(--line); }
+.pill-ok { background: var(--ok-bg); color: var(--ok); }
+.pill-warn { background: var(--warn-bg); color: var(--warn); }
+.pill-danger { background: var(--danger-bg); color: var(--danger); }
+.pill-info { background: var(--info-bg); color: var(--info); }
+
+.stamp {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0.2rem 0.65rem;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  background: var(--surface-2);
+  border: 1px solid var(--line);
+  color: var(--muted);
+}
+.stamp.text-spine { background: var(--ok-bg); color: var(--ok); border-color: transparent; }
+.stamp.text-danger { background: var(--danger-bg); color: var(--danger); border-color: transparent; }
+.stamp.text-rule { background: var(--info-bg); color: var(--indigo); border-color: transparent; }
+
+.meta {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.72rem;
+  color: var(--muted);
+  letter-spacing: 0.01em;
+}
+
+.citation {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 0.7rem;
+  color: var(--muted);
+}
+
+.weave { background: none; }
+
+@keyframes dropdown-pop {
+  from { opacity: 0; transform: scale(0.97) translateY(-2px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.dropdown-pop { animation: dropdown-pop 0.12s ease-out; }
+
+/* ---- Forms ---- */
+.field-label {
+  display: block;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: 0.3rem;
+}
+
+.field-input {
+  width: 100%;
+  border: 1px solid var(--line-strong);
+  background: #fff;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.9rem;
+  border-radius: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.field-input:hover { border-color: var(--muted); }
+.field-input:focus-visible { border-color: var(--indigo); box-shadow: 0 0 0 3px var(--indigo-wash); outline: none; }
+
+/* ---- Table row hover ---- */
+table tbody tr { transition: background-color 0.12s ease; }
+table tbody tr:hover { background: var(--surface-2); }
+
+/* ---- Links that act like nav/list items ---- */
+.link-row {
+  transition: background-color 0.14s ease, padding-left 0.14s ease;
+}
+.link-row:hover { background: var(--surface-2); }
