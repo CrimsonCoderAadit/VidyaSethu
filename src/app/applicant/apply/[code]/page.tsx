@@ -1,6 +1,7 @@
 import { DynamicForm } from "@/components/DynamicForm";
 import { Shell } from "@/components/Shell";
 import { requireRole } from "@/lib/auth";
+import { humanizeSelectionModel } from "@/lib/format";
 import { schemeByCode } from "@/schemes/registry";
 import { redirect } from "next/navigation";
 
@@ -12,7 +13,7 @@ export default async function ApplyPage({ params }: { params: Promise<{ code: st
   return (
     <Shell user={user}>
       <p className="meta">
-        {scheme.version} · selection {scheme.selectionModel.type} · {scheme.selectionModel.citation.sourceDocument}
+        {scheme.version} · selection: {humanizeSelectionModel(scheme.selectionModel.type)} · {scheme.selectionModel.citation.sourceDocument}
       </p>
       <h1 className="font-[family-name:var(--font-display)] mb-2 text-3xl">{scheme.name}</h1>
       <p className="mb-8 max-w-3xl text-sm text-[color:var(--muted)]">{scheme.selectionCharacter}</p>

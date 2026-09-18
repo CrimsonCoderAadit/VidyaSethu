@@ -1,7 +1,10 @@
 import { BarRows } from "@/components/BarChart";
+import { AnimatedNumber } from "@/components/motion/AnimatedNumber";
+import { Reveal } from "@/components/motion/Reveal";
 import { Shell } from "@/components/Shell";
 import { requireRole } from "@/lib/auth";
 import { loadDb } from "@/lib/db";
+import { humanizeEnum, humanizeSelectionModel } from "@/lib/format";
 import { SCHEMES } from "@/schemes/registry";
 import { redirect } from "next/navigation";
 
@@ -20,7 +23,7 @@ export default async function TowerPage() {
   const stageCounts = new Map<string, number>();
   for (const a of db.applications) stageCounts.set(a.status, (stageCounts.get(a.status) ?? 0) + 1);
   const stageRows = [...stageCounts.entries()]
-    .map(([label, value]) => ({ label: label.replaceAll("_", " ").toLowerCase(), value }))
+    .map(([label, value]) => ({ label: humanizeEnum(label).toLowerCase(), value }))
     .sort((a, b) => b.value - a.value);
 
   const deficiencyRate = db.applications.length
@@ -33,72 +36,80 @@ export default async function TowerPage() {
     <Shell user={user}>
       <h1 className="font-[family-name:var(--font-display)] text-3xl">Operations control tower</h1>
       <p className="mb-6 mt-2 max-w-3xl text-sm text-[color:var(--muted)]">
-        What is happening, where, and what needs action — unifying scheme workflow, HITL load, and the
-        institution-verification bottleneck rather than a bare count of applications.
+        What is happening, where it is happening, and what needs action next. Scheme workflow, review-priority load,
+        and the institution-verification bottleneck, in one view instead of a bare count of applications.
       </p>
 
       <div className="grid gap-4 md:grid-cols-4">
-        <div className="card p-4">
+        <Reveal index={0} className="card stat-tile p-4">
           <p className="meta">Applications</p>
-          <p className="font-[family-name:var(--font-display)] text-3xl">{db.applications.length}</p>
-        </div>
-        <div className="card p-4">
-          <p className="meta">Require review (L2/L3)</p>
-          <p className="font-[family-name:var(--font-display)] text-3xl text-[color:var(--danger)]">{reviewRequired}</p>
-        </div>
-        <div className="card p-4">
+          <p className="font-[family-name:var(--font-display)] text-3xl"><AnimatedNumber value={db.applications.length} /></p>
+        </Reveal>
+        <Reveal index={1} className="card stat-tile p-4">
+          <p className="meta">Require review</p>
+          <p className="font-[family-name:var(--font-display)] text-3xl text-[color:var(--danger)]"><AnimatedNumber value={reviewRequired} /></p>
+        </Reveal>
+        <Reveal index={2} className="card stat-tile p-4">
           <p className="meta">Deficiency rate</p>
-          <p className="font-[family-name:var(--font-display)] text-3xl">{deficiencyRate}%</p>
-        </div>
-        <div className="card p-4">
+          <p className="font-[family-name:var(--font-display)] text-3xl"><AnimatedNumber value={deficiencyRate} suffix="%" /></p>
+        </Reveal>
+        <Reveal index={3} className="card stat-tile p-4">
           <p className="meta">Open appeals</p>
-          <p className="font-[family-name:var(--font-display)] text-3xl">{appeals}</p>
-        </div>
+          <p className="font-[family-name:var(--font-display)] text-3xl"><AnimatedNumber value={appeals} /></p>
+        </Reveal>
       </div>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
-        <section className="card p-5">
-          <h2 className="mb-4 font-semibold">Review priority (HITL) load</h2>
-          <BarRows rows={Object.entries(hitl).map(([label, value]) => ({ label, value }))} tone="danger" />
-        </section>
-        <section className="card p-5">
-          <h2 className="mb-4 font-semibold">Where applications currently sit</h2>
-          <BarRows rows={stageRows} />
-        </section>
+        <Reveal index={4}>
+          <section className="card p-5">
+            <h2 className="mb-4 font-semibold">Review priority load</h2>
+            <BarRows rows={Object.entries(hitl).map(([label, value]) => ({ label, value }))} tone="danger" />
+          </section>
+        </Reveal>
+        <Reveal index={5}>
+          <section className="card p-5">
+            <h2 className="mb-4 font-semibold">Where applications currently sit</h2>
+            <BarRows rows={stageRows} />
+          </section>
+        </Reveal>
       </div>
 
-      <table className="card mt-6 w-full text-left text-sm">
-        <thead>
-          <tr className="border-b border-[color:var(--border)] text-xs uppercase tracking-wide text-[color:var(--muted)]">
-            <th className="p-3">Scheme</th>
-            <th>Files</th>
-            <th>Eligible</th>
-            <th>INO pending</th>
-            <th>Model</th>
-          </tr>
-        </thead>
-        <tbody>
-          {byScheme.map(({ s, n, pendingIno, eligible }) => (
-            <tr key={s.code} className="border-t border-[color:var(--border)]">
-              <td className="p-3 font-semibold">{s.shortName}</td>
-              <td>{n}</td>
-              <td>{eligible}</td>
-              <td>{pendingIno}</td>
-              <td className="meta">{s.selectionModel.type}</td>
+      <Reveal index={6}>
+        <table className="card mt-6 w-full text-left text-sm">
+          <thead>
+            <tr className="border-b border-[color:var(--border)] text-xs uppercase tracking-wide text-[color:var(--muted)]">
+              <th className="p-3">Scheme</th>
+              <th>Files</th>
+              <th>Eligible</th>
+              <th>Institution pending</th>
+              <th>Model</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {byScheme.map(({ s, n, pendingIno, eligible }) => (
+              <tr key={s.code} className="border-t border-[color:var(--border)]">
+                <td className="p-3 font-semibold">{s.shortName}</td>
+                <td>{n}</td>
+                <td>{eligible}</td>
+                <td>{pendingIno}</td>
+                <td className="meta">{humanizeSelectionModel(s.selectionModel.type)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </Reveal>
 
-      <section className="card mt-6 p-5">
-        <h2 className="font-semibold">External monitors to retain</h2>
-        <ul className="mt-3 list-disc pl-5 text-sm text-[color:var(--muted)]">
-          <li>Annexure I — Pre/Post-Matric funds released, utilised, beneficiaries through 2025-26</li>
-          <li>Annexure II — Central Sector schemes fund release / beneficiaries</li>
-          <li>DBT Tribal live report (portal totals, not unique lifetime students without methodology)</li>
-          <li>NFST / NOS / NSP operational portals</li>
-        </ul>
-      </section>
+      <Reveal index={7}>
+        <section className="card mt-6 p-5">
+          <h2 className="font-semibold">External monitors to retain</h2>
+          <ul className="mt-3 list-disc pl-5 text-sm text-[color:var(--muted)]">
+            <li>Annexure I: Pre-Matric and Post-Matric funds released, utilised, and beneficiaries through 2025-26</li>
+            <li>Annexure II: Central Sector schemes, fund release and beneficiaries</li>
+            <li>DBT Tribal live report (portal totals, not unique lifetime students without methodology)</li>
+            <li>NFST, NOS, and NSP operational portals</li>
+          </ul>
+        </section>
+      </Reveal>
     </Shell>
   );
 }

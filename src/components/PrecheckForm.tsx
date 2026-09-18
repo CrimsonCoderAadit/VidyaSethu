@@ -3,6 +3,7 @@
 import { EligibilityPanel } from "@/components/EligibilityPanel";
 import { evaluateEligibility } from "@/engine/eligibility";
 import type { Fact } from "@/engine/types";
+import { humanizeSelectionModel } from "@/lib/format";
 import type { SchemeConfig } from "@/engine/types";
 import { useMemo, useState } from "react";
 
@@ -40,7 +41,7 @@ export function PrecheckForm({ schemes }: { schemes: SchemeConfig[] }) {
           >
             {schemes.map((s) => (
               <option key={s.code} value={s.code}>
-                {s.shortName} · {s.selectionModel.type}
+                {s.shortName} · {humanizeSelectionModel(s.selectionModel.type)}
               </option>
             ))}
           </select>

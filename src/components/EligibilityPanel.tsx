@@ -1,4 +1,5 @@
 import type { EligibilityResult } from "@/engine/types";
+import { humanizeEnum } from "@/lib/format";
 import { Stamp } from "./Stamp";
 
 export function EligibilityPanel({ result }: { result: EligibilityResult }) {
@@ -7,7 +8,7 @@ export function EligibilityPanel({ result }: { result: EligibilityResult }) {
     <section className="card p-5">
       <div className="mb-4 flex items-center justify-between gap-3">
         <h2 className="font-[family-name:var(--font-display)] text-xl">Eligibility</h2>
-        <Stamp tone={tone}>{result.outcome.replaceAll("_", " ")}</Stamp>
+        <Stamp tone={tone}>{humanizeEnum(result.outcome)}</Stamp>
       </div>
       <p className="mb-4 text-sm text-[color:var(--muted)]">
         This is the scheme rule engine, not a universal score. Each line cites the approved document that authorised it.
@@ -17,7 +18,7 @@ export function EligibilityPanel({ result }: { result: EligibilityResult }) {
           <li key={trace.ruleId} className="border-t border-[color:var(--border)] pt-3">
             <div className="flex flex-wrap items-baseline justify-between gap-2">
               <p className="font-semibold">
-                {trace.ruleId} · {trace.description}
+                {trace.ruleId} &middot; {trace.description}
               </p>
               <span className={trace.passed ? "text-spine" : "text-danger"}>{trace.passed ? "PASS" : "FAIL"}</span>
             </div>

@@ -5,6 +5,7 @@ import { requestDeficiencyAction, stateRecommendAction } from "@/lib/actions";
 import { requireRole } from "@/lib/auth";
 import { loadDb } from "@/lib/db";
 import { roleContact } from "@/lib/roles";
+import { humanizeEnum } from "@/lib/format";
 import { schemeByCode } from "@/schemes/registry";
 import { redirect } from "next/navigation";
 
@@ -39,7 +40,7 @@ export default async function StatePage() {
                   <h2 className="font-semibold">{app.applicantName}</h2>
                   <p className="meta">{app.id}</p>
                 </div>
-                <Stamp>{app.status.replaceAll("_", " ")}</Stamp>
+                <Stamp>{humanizeEnum(app.status)}</Stamp>
               </div>
               {app.eligibility ? <EligibilityPanel result={app.eligibility} /> : null}
               {entitlement ? <p className="mt-3 text-sm">{entitlement.label}: ₹{entitlement.amount.toLocaleString("en-IN")}</p> : null}

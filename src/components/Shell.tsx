@@ -4,6 +4,7 @@ import type { UserRecord } from "@/lib/models";
 import { APP_NAME, ROLE_HINT, ROLE_LABEL, ROLE_NAV } from "@/lib/roles";
 import { GraduationCap, LogOut } from "lucide-react";
 import Link from "next/link";
+import { PageTransition } from "./motion/PageTransition";
 import { NotificationBell } from "./NotificationBell";
 import { SidebarNav } from "./SidebarNav";
 
@@ -33,11 +34,20 @@ export function Shell({ user, children }: { user: UserRecord; children: React.Re
         </div>
       </aside>
       <div className="min-w-0 flex-1">
-        <header className="flex items-center justify-between border-b border-[color:var(--line)] bg-white px-8 py-4">
+        <header className="relative z-10 flex items-center justify-between border-b border-[color:var(--line)] bg-white px-8 py-4">
           <p className="text-sm text-[color:var(--muted)]">{ROLE_HINT[user.role]}</p>
           <NotificationBell notifications={notifications} />
         </header>
-        <main className="mx-auto max-w-6xl px-8 py-8">{children}</main>
+        <div className="relative overflow-hidden">
+          <div className="pointer-events-none absolute inset-0 overflow-hidden">
+            <div className="content-orb content-orb-a" />
+            <div className="content-orb content-orb-b" />
+            <div className="content-grid absolute inset-0" />
+          </div>
+          <main className="relative mx-auto max-w-6xl px-8 py-8">
+            <PageTransition>{children}</PageTransition>
+          </main>
+        </div>
       </div>
     </div>
   );

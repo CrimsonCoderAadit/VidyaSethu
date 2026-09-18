@@ -2,6 +2,7 @@ import { Shell, Stamp } from "@/components/Shell";
 import { decideRenewalAction } from "@/lib/actions";
 import { requireRole } from "@/lib/auth";
 import { loadDb } from "@/lib/db";
+import { friendlyDateTime } from "@/lib/format";
 import { redirect } from "next/navigation";
 
 export default async function RenewalsPage() {
@@ -30,7 +31,7 @@ export default async function RenewalsPage() {
                 <p className="font-semibold">{r.applicationId}</p>
                 {award ? <Stamp>{award.schemeCode}</Stamp> : null}
               </div>
-              <p className="meta">Requested {r.requestedAt}</p>
+              <p className="meta">Requested {friendlyDateTime(r.requestedAt)}</p>
               <form
                 className="mt-4 grid gap-2 md:grid-cols-[1fr_auto_auto_auto]"
                 action={async (fd) => {

@@ -5,6 +5,7 @@ import { computeEntitlement } from "@/engine/eligibility";
 import { confirmJoiningAction, raiseAppealAction, requestRenewalAction, resolveDeficiencyAction } from "@/lib/actions";
 import { requireRole } from "@/lib/auth";
 import { loadDb } from "@/lib/db";
+import { hitlLabel, humanizeEnum } from "@/lib/format";
 import { schemeByCode } from "@/schemes/registry";
 import { notFound, redirect } from "next/navigation";
 
@@ -34,8 +35,8 @@ export default async function ApplicationDetail({ params }: { params: Promise<{ 
       <p className="meta">{app.id}</p>
       <div className="mb-2 flex flex-wrap items-center gap-3">
         <h1 className="font-[family-name:var(--font-display)] text-3xl">{scheme.shortName}</h1>
-        <Stamp>{app.status.replaceAll("_", " ")}</Stamp>
-        <Stamp tone="rule">{app.hitlLevel}</Stamp>
+        <Stamp>{humanizeEnum(app.status)}</Stamp>
+        <Stamp tone="rule">{hitlLabel(app.hitlLevel)}</Stamp>
       </div>
 
       <section className="card mt-6 p-5">
@@ -73,14 +74,14 @@ export default async function ApplicationDetail({ params }: { params: Promise<{ 
         <section className="card mt-6 p-5">
           <div className="mb-4 flex flex-wrap items-center justify-between gap-2">
             <h2 className="font-semibold">Award & fellowship lifecycle</h2>
-            <Stamp tone={award.status === "PAID" ? "ok" : "stamp"}>{award.status}</Stamp>
+            <Stamp tone={award.status === "PAID" ? "ok" : "stamp"}>{humanizeEnum(award.status)}</Stamp>
           </div>
           <StagePipeline stages={AWARD_STAGES} current={award.lifecycle} labels={AWARD_LABELS} />
 
           <ul className="mt-5 space-y-2 text-sm">
             {award.milestones.map((m) => (
               <li key={m.id} className="flex items-center gap-2">
-                <span className={`stamp ${m.status === "DONE" ? "text-spine" : ""}`}>{m.status}</span>
+                <span className={`stamp ${m.status === "DONE" ? "text-spine" : ""}`}>{humanizeEnum(m.status)}</span>
                 {m.label}
               </li>
             ))}
@@ -127,8 +128,8 @@ export default async function ApplicationDetail({ params }: { params: Promise<{ 
         <ul className="mt-3 space-y-2 text-sm">
           {app.documents.map((d) => (
             <li key={d.id} className="flex items-center justify-between gap-2 border-t border-[color:var(--border)] pt-2 first:border-0 first:pt-0">
-              <span>{d.documentType} · {d.fileName}</span>
-              <span className="meta">OCR {Math.round(d.ocrConfidence * 100)}% · trust {d.trust} · {d.quality}</span>
+              <span>{humanizeEnum(d.documentType)} · {d.fileName}</span>
+              <span className="meta">OCR {Math.round(d.ocrConfidence * 100)}% · trust {d.trust} · {humanizeEnum(d.quality)}</span>
             </li>
           ))}
         </ul>

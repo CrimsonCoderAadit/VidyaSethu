@@ -4,6 +4,7 @@ import { computeEntitlement } from "@/engine/eligibility";
 import { financeMarkFailedAction, financeMarkPaidAction, verifyMilestoneAction } from "@/lib/actions";
 import { requireRole } from "@/lib/auth";
 import { loadDb } from "@/lib/db";
+import { humanizeEnum } from "@/lib/format";
 import { schemeByCode } from "@/schemes/registry";
 import { redirect } from "next/navigation";
 
@@ -72,10 +73,10 @@ export default async function FinancePage() {
             <div className="flex flex-wrap items-center justify-between gap-3">
               <div>
                 <p className="font-semibold">{a.applicationId}</p>
-                <p className="meta">{a.schemeCode} · {a.lifecycle.replaceAll("_", " ").toLowerCase()}</p>
+                <p className="meta">{a.schemeCode} · {humanizeEnum(a.lifecycle).toLowerCase()}</p>
               </div>
               <div className="flex items-center gap-3">
-                <Stamp tone={a.status === "PAID" ? "ok" : a.status === "FAILED" ? "danger" : "stamp"}>{a.status}</Stamp>
+                <Stamp tone={a.status === "PAID" ? "ok" : a.status === "FAILED" ? "danger" : "stamp"}>{humanizeEnum(a.status)}</Stamp>
                 {a.status !== "PAID" && a.status !== "FAILED" ? (
                   <>
                     <form action={financeMarkPaidAction.bind(null, a.id)}>
@@ -99,7 +100,7 @@ export default async function FinancePage() {
               {a.milestones.map((m) => (
                 <li key={m.id} className="flex items-center justify-between gap-2">
                   <span className="flex items-center gap-2">
-                    <span className={`stamp ${m.status === "DONE" ? "text-spine" : ""}`}>{m.status}</span>
+                    <span className={`stamp ${m.status === "DONE" ? "text-spine" : ""}`}>{humanizeEnum(m.status)}</span>
                     {m.label}
                   </span>
                   {m.status === "PENDING" && m.id !== "m-join" ? (

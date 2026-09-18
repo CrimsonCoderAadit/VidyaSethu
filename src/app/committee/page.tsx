@@ -2,6 +2,8 @@ import { Shell, Stamp } from "@/components/Shell";
 import { committeeScoreAction } from "@/lib/actions";
 import { requireRole } from "@/lib/auth";
 import { loadDb } from "@/lib/db";
+import { humanizeEnum, optionLabel } from "@/lib/format";
+import { schemeByCode } from "@/schemes/registry";
 import { redirect } from "next/navigation";
 
 function fact(app: { facts: { field: string; value: unknown }[] }, field: string) {
@@ -12,6 +14,7 @@ export default async function CommitteePage() {
   const user = await requireRole(["COMMITTEE"]);
   if (!user) redirect("/");
   const db = loadDb();
+  const nos = schemeByCode("NOS");
   const apps = db.applications.filter(
     (a) => a.schemeCode === "NOS" && a.eligibility?.outcome === "ELIGIBLE" && a.committeeScore === undefined,
   );
@@ -37,13 +40,13 @@ export default async function CommitteePage() {
                 <h2 className="font-semibold">{app.applicantName}</h2>
                 <p className="meta">{app.id}</p>
               </div>
-              <Stamp tone="rule">{String(fact(app, "fieldOfStudy"))}</Stamp>
+              <Stamp tone="rule">{optionLabel(nos, "fieldOfStudy", fact(app, "fieldOfStudy"))}</Stamp>
             </div>
 
             <dl className="mt-4 grid grid-cols-2 gap-x-6 gap-y-2 border-t border-[color:var(--border)] pt-4 text-sm md:grid-cols-3">
               <div>
                 <dt className="meta">Programme</dt>
-                <dd>{String(fact(app, "programmeLevel") ?? "—")}</dd>
+                <dd>{optionLabel(nos, "programmeLevel", fact(app, "programmeLevel"))}</dd>
               </div>
               <div>
                 <dt className="meta">Institution</dt>
@@ -63,7 +66,7 @@ export default async function CommitteePage() {
               </div>
               <div>
                 <dt className="meta">Admission status</dt>
-                <dd>{String(fact(app, "admissionStatus") ?? "—")}</dd>
+                <dd>{optionLabel(nos, "admissionStatus", fact(app, "admissionStatus"))}</dd>
               </div>
               <div>
                 <dt className="meta">Age on 1 July</dt>
@@ -80,7 +83,7 @@ export default async function CommitteePage() {
             </dl>
 
             <p className="mt-4 text-sm">
-              <span className="meta">Proposal — </span>
+              <span className="meta">Proposal: </span>
               {String(fact(app, "proposal") ?? "")}
             </p>
 

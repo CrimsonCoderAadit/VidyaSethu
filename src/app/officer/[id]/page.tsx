@@ -11,6 +11,7 @@ import {
 } from "@/lib/actions";
 import { requireRole } from "@/lib/auth";
 import { loadDb } from "@/lib/db";
+import { friendlyDateTime, hitlLabel, humanizeEnum, humanizeField, humanizeSelectionModel } from "@/lib/format";
 import { schemeByCode } from "@/schemes/registry";
 import { notFound, redirect } from "next/navigation";
 
@@ -28,12 +29,12 @@ export default async function OfficerCase({ params }: { params: Promise<{ id: st
   return (
     <Shell user={user}>
       <p className="meta">
-        Evidence copilot · scheme {scheme.code} {scheme.version} · model {scheme.selectionModel.type}
+        Evidence copilot · scheme {scheme.shortName} {scheme.version} · model {humanizeSelectionModel(scheme.selectionModel.type)}
       </p>
       <div className="mb-1 flex flex-wrap items-center gap-3">
         <h1 className="font-[family-name:var(--font-display)] text-3xl">{app.applicantName}</h1>
         <Stamp>{app.id}</Stamp>
-        <Stamp tone="rule">{app.hitlLevel}</Stamp>
+        <Stamp tone="rule">{hitlLabel(app.hitlLevel)}</Stamp>
         {app.isAppeal ? <Stamp tone="danger">Appeal</Stamp> : null}
       </div>
       {app.isAppeal && app.appealReason ? (
@@ -41,7 +42,7 @@ export default async function OfficerCase({ params }: { params: Promise<{ id: st
       ) : null}
       <ul className="mb-4 text-sm text-[color:var(--muted)]">
         {app.hitlReasons.map((r) => (
-          <li key={r}>— {r}</li>
+          <li key={r}>{r}</li>
         ))}
       </ul>
 
@@ -65,7 +66,7 @@ export default async function OfficerCase({ params }: { params: Promise<{ id: st
             {app.documents.map((d) => (
               <li key={d.id} className="border-t border-[color:var(--border)] pt-3">
                 <div className="flex flex-wrap items-center justify-between gap-2">
-                  <span className="font-medium">{d.documentType}</span>
+                  <span className="font-medium">{humanizeEnum(d.documentType)}</span>
                   <span className="flex gap-1.5">
                     <span className="stamp">OCR {Math.round(d.ocrConfidence * 100)}%</span>
                     <span className={`stamp ${d.trust <= "C" ? "text-spine" : d.trust === "D" ? "text-rule" : "text-danger"}`}>trust {d.trust}</span>
@@ -75,7 +76,7 @@ export default async function OfficerCase({ params }: { params: Promise<{ id: st
                   <tbody>
                     {Object.entries(d.extracted).map(([k, v]) => (
                       <tr key={k} className="border-t border-[color:var(--border)]">
-                        <td className="py-1 pr-3 text-[color:var(--muted)]">{k}</td>
+                        <td className="py-1 pr-3 text-[color:var(--muted)]">{humanizeField(k)}</td>
                         <td className="py-1">{String(v)}</td>
                       </tr>
                     ))}
@@ -96,7 +97,7 @@ export default async function OfficerCase({ params }: { params: Promise<{ id: st
           {app.facts.map((fact) => (
             <li key={fact.field} className="border-t border-[color:var(--border)] pt-3 text-sm">
               <p className="font-semibold">
-                {fact.field} = {String(fact.value)} · {fact.source} · {fact.verified ? "verified" : "unverified"}
+                {humanizeField(fact.field)}: {String(fact.value)} · {humanizeEnum(fact.source)} · {fact.verified ? "verified" : "unverified"}
               </p>
               {user.role !== "AUDITOR" ? (
                 <div className="mt-2 flex flex-wrap gap-2">
@@ -160,7 +161,7 @@ export default async function OfficerCase({ params }: { params: Promise<{ id: st
           >
             <h2 className="font-semibold">Defer to senior review</h2>
             <p className="mt-2 text-sm text-[color:var(--muted)]">
-              For adverse decisions, integrity signals, or policy exceptions (HITL L3) — leaves the file in the
+              For adverse decisions, integrity signals, or policy exceptions (escalated review) leaves the file in the
               queue and logs why it needs a second look, without approving or rejecting it.
             </p>
             <textarea name="note" className="field-input mt-3" placeholder="Why does this need senior review?" />
@@ -198,7 +199,7 @@ export default async function OfficerCase({ params }: { params: Promise<{ id: st
         <ol className="mt-3 space-y-2 text-sm">
           {app.timeline.map((e, i) => (
             <li key={`${e.at}-${i}`}>
-              <span className="meta">{e.at}</span> · {e.stage.replaceAll("_", " ")} · {e.actor}: {e.note}
+              <span className="meta">{friendlyDateTime(e.at)}</span> · {humanizeEnum(e.stage)} · {e.actor}: {e.note}
             </li>
           ))}
         </ol>

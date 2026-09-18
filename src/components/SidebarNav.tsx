@@ -1,6 +1,7 @@
 "use client";
 
 import type { IconName, NavItem } from "@/lib/roles";
+import { AnimatePresence, motion } from "framer-motion";
 import {
   Banknote,
   BookOpenCheck,
@@ -49,19 +50,28 @@ export function SidebarNav({ links }: { links: NavItem[] }) {
           <Link
             key={l.href}
             href={l.href}
-            className={`group relative flex items-center gap-3 rounded-md py-2.5 pl-4 pr-3 text-sm transition-colors duration-150 ${active ? "bg-white/10" : "hover:bg-white/10"}`}
+            className={`group relative flex items-center gap-3 rounded-md py-2.5 pl-4 pr-3 text-sm transition-colors duration-150 ${active ? "" : "hover:bg-white/5"}`}
             style={{ color: active ? "#fff" : "rgba(255,255,255,0.72)" }}
           >
+            <AnimatePresence>
+              {active ? (
+                <motion.span
+                  layoutId="sidebar-active"
+                  className="absolute inset-0 rounded-md bg-white/10"
+                  transition={{ type: "spring", stiffness: 420, damping: 34 }}
+                />
+              ) : null}
+            </AnimatePresence>
             <span
               className="absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-full transition-all duration-150"
               style={{ background: active ? "var(--marigold)" : "transparent" }}
             />
             <Icon
-              className="h-4 w-4 shrink-0 transition-transform duration-150 group-hover:translate-x-0.5"
+              className="relative h-4 w-4 shrink-0 transition-transform duration-150 group-hover:translate-x-0.5"
               strokeWidth={1.75}
               style={{ color: active ? "var(--marigold)" : "rgba(255,255,255,0.55)" }}
             />
-            <span className="group-hover:text-white">{l.label}</span>
+            <span className="relative transition-colors duration-150 group-hover:text-white">{l.label}</span>
           </Link>
         );
       })}

@@ -1,4 +1,5 @@
 import type { DocumentRecord, Fact, HitlLevel } from "./types";
+import { humanizeEnum } from "@/lib/format";
 
 export type ConsistencyFinding = {
   id: string;
@@ -16,7 +17,7 @@ export function consistencyChecks(facts: Fact[], documents: DocumentRecord[]): C
       findings.push({
         id: "NAME_MISMATCH",
         severity: "HIGH",
-        message: `${doc.documentType} extracts name “${extractedName}” but the application says “${name}”.`,
+        message: `${humanizeEnum(doc.documentType)} extracts the name “${extractedName}”, but the application says “${name}”.`,
         fields: ["fullName"],
       });
     }

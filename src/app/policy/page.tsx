@@ -1,6 +1,7 @@
 import { Shell, Stamp } from "@/components/Shell";
 import { qaScheme } from "@/engine/policyQa";
 import { requireRole } from "@/lib/auth";
+import { humanizeEnum } from "@/lib/format";
 import { loadDb } from "@/lib/db";
 import { SCHEMES } from "@/schemes/registry";
 import Link from "next/link";
@@ -25,7 +26,7 @@ export default async function PolicyStudio() {
             <Link key={s.code} href={`/policy/${s.code}`} className="card card-hover block p-5">
               <div className="flex flex-wrap items-center justify-between gap-2">
                 <h2 className="font-semibold">{s.shortName}</h2>
-                <Stamp tone={status === "PUBLISHED" ? "ok" : "stamp"}>{status}</Stamp>
+                <Stamp tone={status === "PUBLISHED" ? "ok" : "stamp"}>{humanizeEnum(status)}</Stamp>
               </div>
               <p className="meta">
                 {s.version} · effective sources: {s.officialSources.join("; ")}

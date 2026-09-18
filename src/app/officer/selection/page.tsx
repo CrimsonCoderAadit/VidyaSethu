@@ -2,6 +2,7 @@ import { Shell, Stamp } from "@/components/Shell";
 import { runSelectionAction } from "@/lib/actions";
 import { requireRole } from "@/lib/auth";
 import { loadDb } from "@/lib/db";
+import { friendlyDateTime, humanizeSelectionModel } from "@/lib/format";
 import { SCHEMES } from "@/schemes/registry";
 import { redirect } from "next/navigation";
 
@@ -22,7 +23,7 @@ export default async function SelectionPage() {
         {SCHEMES.map((s) => (
           <form key={s.code} action={runSelectionAction.bind(null, s.code)} className="card p-4">
             <p className="font-semibold">{s.shortName}</p>
-            <p className="meta">{s.selectionModel.type}</p>
+            <p className="meta">{humanizeSelectionModel(s.selectionModel.type)}</p>
             <button className="btn-outline mt-3 px-3 py-1.5 text-xs font-semibold uppercase tracking-[0.08em]">Run {s.shortName} selection</button>
           </form>
         ))}
@@ -32,9 +33,9 @@ export default async function SelectionPage() {
           <section key={run.id} className="card p-5">
             <div className="flex flex-wrap items-center justify-between gap-2">
               <h2 className="font-[family-name:var(--font-display)] text-xl">{run.schemeId}</h2>
-              <Stamp tone="rule">{run.model}</Stamp>
+              <Stamp tone="rule">{humanizeSelectionModel(run.model)}</Stamp>
             </div>
-            <p className="meta">{run.createdAt}</p>
+            <p className="meta">{friendlyDateTime(run.createdAt)}</p>
             <table className="mt-3 w-full text-left text-sm">
               <thead>
                 <tr className="border-b border-[color:var(--border)] text-xs uppercase tracking-wide text-[color:var(--muted)]">

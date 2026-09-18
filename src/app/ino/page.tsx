@@ -3,6 +3,7 @@ import { inoVerifyAction } from "@/lib/actions";
 import { requireRole } from "@/lib/auth";
 import { loadDb } from "@/lib/db";
 import { roleContact } from "@/lib/roles";
+import { humanizeEnum } from "@/lib/format";
 import { redirect } from "next/navigation";
 
 export default async function InoPage() {
@@ -18,7 +19,7 @@ export default async function InoPage() {
       <h1 className="font-[family-name:var(--font-display)] text-3xl">Institution verification</h1>
       <p className="mb-6 mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
         {apps.length} application{apps.length === 1 ? "" : "s"} waiting on your confirmation of admission, programme
-        and registration details. You confirm or flag — the authorised decision stays with MoTA.
+        and registration details. You confirm or flag it; the authorised decision stays with MoTA.
       </p>
       {apps.length === 0 ? (
         <p className="card p-5 text-sm text-[color:var(--muted)]">Nothing pending. New files appear here as soon as a scheme routes them to institution verification.</p>
@@ -31,7 +32,7 @@ export default async function InoPage() {
                 <h2 className="font-semibold">{app.applicantName}</h2>
                 <p className="meta">{app.id}</p>
               </div>
-              <Stamp>{app.schemeCode}</Stamp>
+              <Stamp>{humanizeEnum(app.schemeCode)}</Stamp>
             </div>
             <p className="mt-2 text-sm">{app.institutionName}</p>
 
@@ -60,7 +61,7 @@ export default async function InoPage() {
               <button className="btn-outline px-4 py-2 text-xs font-semibold uppercase tracking-[0.08em] text-[color:var(--accent)]">Flag discrepancy</button>
             </form>
             <p className="mt-2 text-xs text-[color:var(--muted)]">
-              Sends a correction request straight back to the applicant — it does not reject the application. Only
+              Sends a correction request straight back to the applicant. It does not reject the application. Only
               MoTA can record a final decision.
             </p>
           </article>

@@ -250,3 +250,80 @@ table tbody tr:hover { background: var(--surface-2); }
   transition: background-color 0.14s ease, padding-left 0.14s ease;
 }
 .link-row:hover { background: var(--surface-2); }
+
+/* ---- Hero surface: slow-drifting aurora behind the 3D scene ---- */
+@keyframes aurora-drift {
+  0%   { transform: translate3d(0, 0, 0) scale(1); }
+  50%  { transform: translate3d(2%, -3%, 0) scale(1.06); }
+  100% { transform: translate3d(0, 0, 0) scale(1); }
+}
+.aurora-a { animation: aurora-drift 16s ease-in-out infinite; }
+.aurora-b { animation: aurora-drift 22s ease-in-out infinite reverse; }
+
+@keyframes grid-pan {
+  from { background-position: 0 0; }
+  to   { background-position: 48px 48px; }
+}
+.hero-grid {
+  background-image:
+    linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px);
+  background-size: 48px 48px;
+  animation: grid-pan 24s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-a, .aurora-b, .hero-grid { animation: none; }
+}
+
+/* ---- Glass variant for cards floated over the hero gradient ---- */
+.glass {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+}
+
+/* ---- Number tiles get a touch of lift on hover, since they're the first thing scanned ---- */
+.stat-tile {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.stat-tile:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 28px -16px rgba(24, 36, 48, 0.28);
+}
+
+/* ---- Ambient background for the authenticated app shell: a couple of soft, ---- */
+/* ---- slow-drifting color washes plus a faint grid, so the paper never reads flat. ---- */
+.content-grid {
+  background-image:
+    linear-gradient(rgba(24, 36, 48, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(24, 36, 48, 0.035) 1px, transparent 1px);
+  background-size: 42px 42px;
+  -webkit-mask-image: radial-gradient(ellipse 75% 55% at 50% 0%, black 35%, transparent 100%);
+  mask-image: radial-gradient(ellipse 75% 55% at 50% 0%, black 35%, transparent 100%);
+}
+.content-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(64px);
+}
+.content-orb-a {
+  top: -140px;
+  right: -100px;
+  width: 460px;
+  height: 460px;
+  background: radial-gradient(circle, rgba(224, 138, 30, 0.14) 0%, transparent 70%);
+  animation: aurora-drift 20s ease-in-out infinite;
+}
+.content-orb-b {
+  bottom: -180px;
+  left: -120px;
+  width: 480px;
+  height: 480px;
+  background: radial-gradient(circle, rgba(31, 58, 95, 0.12) 0%, transparent 70%);
+  animation: aurora-drift 26s ease-in-out infinite reverse;
+}
+@media (prefers-reduced-motion: reduce) {
+  .content-orb-a, .content-orb-b { animation: none; }
+}

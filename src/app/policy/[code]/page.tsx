@@ -3,6 +3,7 @@ import { qaScheme } from "@/engine/policyQa";
 import { advancePolicyStatusAction } from "@/lib/actions";
 import { requireRole } from "@/lib/auth";
 import { loadDb } from "@/lib/db";
+import { humanizeSelectionModel, humanizeEnum } from "@/lib/format";
 import { schemeByCode } from "@/schemes/registry";
 import { redirect } from "next/navigation";
 
@@ -26,8 +27,8 @@ export default async function PolicyDetail({ params }: { params: Promise<{ code:
       </p>
       <h1 className="font-[family-name:var(--font-display)] text-3xl">{scheme.name}</h1>
       <div className="mt-4 flex flex-wrap gap-2">
-        <Stamp tone="rule">{scheme.selectionModel.type}</Stamp>
-        <Stamp tone={status === "PUBLISHED" ? "ok" : "stamp"}>{status}</Stamp>
+        <Stamp tone="rule">{humanizeSelectionModel(scheme.selectionModel.type)}</Stamp>
+        <Stamp tone={status === "PUBLISHED" ? "ok" : "stamp"}>{humanizeEnum(status)}</Stamp>
       </div>
 
       <section className="card mt-6 p-5">
@@ -47,7 +48,7 @@ export default async function PolicyDetail({ params }: { params: Promise<{ code:
             <button className="btn-primary px-4 py-2 text-sm font-semibold">Advance to {nextStatus}</button>
           </form>
         ) : null}
-        {atEnd ? <p className="mt-3 text-sm text-[color:var(--muted)]">Published. No silent edits — a new version is required to change active policy.</p> : null}
+        {atEnd ? <p className="mt-3 text-sm text-[color:var(--muted)]">Published. No silent edits: a new version is required to change active policy.</p> : null}
       </section>
 
       <section className="card mt-4 p-5">
