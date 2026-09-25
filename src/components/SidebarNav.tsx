@@ -39,12 +39,16 @@ const ICONS: Record<IconName, LucideIcon> = {
   FileSearch,
 };
 
+function isActive(pathname: string | null, href: string) {
+  return pathname === href || (href !== "/" && !!pathname?.startsWith(`${href}/`));
+}
+
 export function SidebarNav({ links }: { links: NavItem[] }) {
   const pathname = usePathname();
   return (
     <nav className="flex-1 space-y-0.5 px-3 py-4">
       {links.map((l) => {
-        const active = pathname === l.href || (l.href !== "/" && pathname?.startsWith(`${l.href}/`));
+        const active = isActive(pathname, l.href);
         const Icon = ICONS[l.icon];
         return (
           <Link
@@ -72,6 +76,36 @@ export function SidebarNav({ links }: { links: NavItem[] }) {
               style={{ color: active ? "var(--marigold)" : "rgba(255,255,255,0.55)" }}
             />
             <span className="relative transition-colors duration-150 group-hover:text-white">{l.label}</span>
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
+
+/** Phone layout: a fixed bottom tab bar with thumb-sized (≥48px) targets instead of the sidebar. */
+export function BottomNav({ links }: { links: NavItem[] }) {
+  const pathname = usePathname();
+  if (links.length < 2) return null;
+  return (
+    <nav
+      aria-label="Main"
+      className="fixed inset-x-0 bottom-0 z-20 flex border-t border-[color:var(--line)] bg-white md:hidden"
+      style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+    >
+      {links.slice(0, 5).map((l) => {
+        const active = isActive(pathname, l.href);
+        const Icon = ICONS[l.icon];
+        return (
+          <Link
+            key={l.href}
+            href={l.href}
+            aria-current={active ? "page" : undefined}
+            className="flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium"
+            style={{ color: active ? "var(--indigo)" : "var(--muted)" }}
+          >
+            <Icon className="h-5 w-5" strokeWidth={active ? 2.25 : 1.75} style={active ? { color: "var(--marigold)" } : undefined} />
+            {l.short}
           </Link>
         );
       })}

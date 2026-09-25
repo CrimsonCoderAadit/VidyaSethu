@@ -21,7 +21,7 @@ export default async function AuditorPage() {
         word for what happened. Nothing here can be edited or deleted.
       </p>
 
-      <div className="mb-6 grid gap-4 md:grid-cols-4">
+      <div className="mb-6 grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <div className="card p-4">
           <p className="meta">Logged events</p>
           <p className="font-[family-name:var(--font-display)] text-3xl">{db.audit.length}</p>

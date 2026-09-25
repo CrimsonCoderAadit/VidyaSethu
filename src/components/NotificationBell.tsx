@@ -6,7 +6,7 @@ import { Bell } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 
-export function NotificationBell({ notifications }: { notifications: NotificationRecord[] }) {
+export function NotificationBell({ notifications, tone = "light" }: { notifications: NotificationRecord[]; tone?: "light" | "dark" }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const rootRef = useRef<HTMLDivElement>(null);
@@ -32,7 +32,7 @@ export function NotificationBell({ notifications }: { notifications: Notificatio
             router.refresh();
           }
         }}
-        className="relative flex h-9 w-9 items-center justify-center rounded-md text-[color:var(--muted)] transition-colors duration-150 hover:bg-[color:var(--surface-2)]"
+        className={`relative flex h-11 w-11 items-center justify-center rounded-md transition-colors duration-150 md:h-9 md:w-9 ${tone === "dark" ? "text-white/75" : "text-[color:var(--muted)] hover:bg-[color:var(--surface-2)]"}`}
         aria-label="Notifications"
       >
         <Bell className="h-5 w-5" strokeWidth={1.75} />
@@ -43,7 +43,7 @@ export function NotificationBell({ notifications }: { notifications: Notificatio
         ) : null}
       </button>
       {open ? (
-        <div className="dropdown-pop absolute right-0 z-10 mt-2 w-80 origin-top-right rounded-lg border border-[color:var(--border)] bg-white p-2 shadow-lg">
+        <div className="dropdown-pop absolute right-0 z-30 mt-2 w-[min(20rem,calc(100vw-2rem))] text-[color:var(--ink)] origin-top-right rounded-lg border border-[color:var(--border)] bg-white p-2 shadow-lg">
           {notifications.length === 0 ? (
             <p className="p-3 text-sm text-[color:var(--muted)]">No notifications.</p>
           ) : (

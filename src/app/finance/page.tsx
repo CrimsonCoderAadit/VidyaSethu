@@ -38,7 +38,7 @@ export default async function FinancePage() {
         entitlement formula, not confirmed disbursement figures.
       </p>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <div className="card p-4">
           <p className="meta">Sanctioned awards</p>
           <p className="font-[family-name:var(--font-display)] text-3xl">{awards.length}</p>

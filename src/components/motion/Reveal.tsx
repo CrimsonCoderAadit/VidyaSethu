@@ -1,18 +1,8 @@
-"use client";
-
-import { motion, type Variants } from "framer-motion";
 import type { ReactNode } from "react";
 
-const variants: Variants = {
-  hidden: { opacity: 0, y: 14 },
-  show: (i: number) => ({
-    opacity: 1,
-    y: 0,
-    transition: { delay: i * 0.06, duration: 0.45, ease: [0.22, 1, 0.36, 1] },
-  }),
-};
-
-/** Fades + lifts children in on mount. Pass `index` to stagger a grid/list of these. */
+/** Fades + lifts children in on mount. Pass `index` to stagger a grid/list of these.
+ * Pure CSS (see `.reveal` in globals.css) so server-rendered content is visible and
+ * animates before any JavaScript arrives — on a 3G phone the JS can take seconds. */
 export function Reveal({
   children,
   index = 0,
@@ -23,15 +13,9 @@ export function Reveal({
   className?: string;
 }) {
   return (
-    <motion.div
-      className={className}
-      custom={index}
-      initial="hidden"
-      animate="show"
-      variants={variants}
-    >
+    <div className={`reveal ${className ?? ""}`} style={{ animationDelay: `${index * 60}ms` }}>
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -46,15 +30,8 @@ export function RevealItem({
   className?: string;
 }) {
   return (
-    <motion.li
-      className={className}
-      custom={index}
-      initial="hidden"
-      animate="show"
-      variants={variants}
-      style={{ listStyle: "none" }}
-    >
+    <li className={`reveal ${className ?? ""}`} style={{ animationDelay: `${index * 60}ms`, listStyle: "none" }}>
       {children}
-    </motion.li>
+    </li>
   );
 }

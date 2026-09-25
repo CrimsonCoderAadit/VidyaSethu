@@ -1,4 +1,5 @@
-import type { Metadata } from "next";
+import { LiteModeProvider } from "@/components/LiteMode";
+import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Public_Sans, Zilla_Slab } from "next/font/google";
 import "./globals.css";
 
@@ -24,12 +25,24 @@ export const metadata: Metadata = {
   title: "Vidya Setu — MoTA Scholarship & Fellowship Portal",
   description:
     "A configurable scholarship and fellowship administration portal for the Ministry of Tribal Affairs.",
+  applicationName: "Vidya Setu",
+  appleWebApp: { capable: true, title: "Vidya Setu", statusBarStyle: "default" },
+  icons: { icon: "/icon.svg", apple: "/icon.svg" },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#1f3a5f",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${display.variable} ${body.variable} ${mono.variable} antialiased`}>{children}</body>
+      <body className={`${display.variable} ${body.variable} ${mono.variable} antialiased`}>
+        <LiteModeProvider>{children}</LiteModeProvider>
+      </body>
     </html>
   );
 }

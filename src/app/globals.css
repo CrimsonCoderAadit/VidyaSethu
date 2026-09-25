@@ -327,3 +327,25 @@ table tbody tr:hover { background: var(--surface-2); }
 @media (prefers-reduced-motion: reduce) {
   .content-orb-a, .content-orb-b { animation: none; }
 }
+
+/* ---- Lite mode (phones, Data Saver, 2G/3G — set by LiteModeProvider) ---- */
+/* Drop blurred orbs, grid masks and hover lifts: they cost GPU and battery on low-end phones. */
+[data-lite] .ambient { display: none; }
+[data-lite] *, [data-lite] *::before, [data-lite] *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; }
+[data-lite] .stat-tile:hover { transform: none; box-shadow: none; }
+
+/* ---- Phone widths ---- */
+@media (max-width: 767px) {
+  /* Wide tables scroll sideways inside their card instead of pushing the page wider. */
+  main table { display: block; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  /* 16px inputs stop iOS Safari zooming the page on focus; 44px meets touch-target guidance. */
+  input, select, textarea { font-size: 16px; }
+  button, input[type="submit"], select { min-height: 44px; }
+}
+
+/* ---- Entrance animations (CSS, so they run without waiting for JS) ---- */
+@keyframes reveal-in { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+@keyframes page-in { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+.reveal { animation: reveal-in 0.45s cubic-bezier(0.22, 1, 0.36, 1) both; }
+.page-enter { animation: page-in 0.35s cubic-bezier(0.22, 1, 0.36, 1) both; }
+[data-lite] .reveal, [data-lite] .page-enter { animation: none; }

@@ -1,22 +1,16 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { usePathname } from "next/navigation";
 import type { ReactNode } from "react";
 
 /** Every navigation mounts a fresh page tree in the app router, so keying on
- * the path is enough to replay this fade-and-lift on every route change,
- * without needing AnimatePresence to keep the old page around. */
+ * the path is enough to replay this CSS fade-and-lift on every route change.
+ * CSS rather than framer-motion so the first paint never waits on hydration. */
 export function PageTransition({ children }: { children: ReactNode }) {
   const pathname = usePathname();
   return (
-    <motion.div
-      key={pathname}
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.35, ease: [0.22, 1, 0.36, 1] }}
-    >
+    <div key={pathname} className="page-enter">
       {children}
-    </motion.div>
+    </div>
   );
 }

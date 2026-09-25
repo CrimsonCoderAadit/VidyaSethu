@@ -40,7 +40,7 @@ export default async function TowerPage() {
         and the institution-verification bottleneck, in one view instead of a bare count of applications.
       </p>
 
-      <div className="grid gap-4 md:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4 md:gap-4">
         <Reveal index={0} className="card stat-tile p-4">
           <p className="meta">Applications</p>
           <p className="font-[family-name:var(--font-display)] text-3xl"><AnimatedNumber value={db.applications.length} /></p>

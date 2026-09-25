@@ -45,30 +45,31 @@ export const ROLE_HOME: Record<Role, string> = {
   AUDITOR: "/auditor",
 };
 
-export type NavItem = { href: string; label: string; icon: IconName };
+/** `short` is the label under the icon in the phone bottom tab bar. */
+export type NavItem = { href: string; label: string; short: string; icon: IconName };
 
 export const ROLE_NAV: Record<Role, NavItem[]> = {
   APPLICANT: [
-    { href: "/applicant", label: "My applications", icon: "LayoutDashboard" },
-    { href: "/applicant/schemes", label: "Apply for a scheme", icon: "BookOpenCheck" },
-    { href: "/applicant/precheck", label: "Eligibility pre-check", icon: "Search" },
+    { href: "/applicant", label: "My applications", short: "Home", icon: "LayoutDashboard" },
+    { href: "/applicant/schemes", label: "Apply for a scheme", short: "Apply", icon: "BookOpenCheck" },
+    { href: "/applicant/precheck", label: "Eligibility pre-check", short: "Check", icon: "Search" },
   ],
-  INO: [{ href: "/ino", label: "Institution verification", icon: "Building2" }],
-  STATE: [{ href: "/state", label: "State / UT queue", icon: "ClipboardList" }],
+  INO: [{ href: "/ino", label: "Institution verification", short: "Verify", icon: "Building2" }],
+  STATE: [{ href: "/state", label: "State / UT queue", short: "Queue", icon: "ClipboardList" }],
   MOTA: [
-    { href: "/officer", label: "Review queue", icon: "LayoutDashboard" },
-    { href: "/officer/selection", label: "Selection runs", icon: "Users" },
-    { href: "/officer/renewals", label: "Renewals", icon: "RefreshCw" },
-    { href: "/policy", label: "Policy studio", icon: "ScrollText" },
-    { href: "/tower", label: "Control tower", icon: "Settings2" },
+    { href: "/officer", label: "Review queue", short: "Queue", icon: "LayoutDashboard" },
+    { href: "/officer/selection", label: "Selection runs", short: "Selection", icon: "Users" },
+    { href: "/officer/renewals", label: "Renewals", short: "Renewals", icon: "RefreshCw" },
+    { href: "/policy", label: "Policy studio", short: "Policy", icon: "ScrollText" },
+    { href: "/tower", label: "Control tower", short: "Tower", icon: "Settings2" },
   ],
-  COMMITTEE: [{ href: "/committee", label: "NOS dossiers", icon: "Gavel" }],
-  FINANCE: [{ href: "/finance", label: "Sanctions & payments", icon: "Banknote" }],
-  ADMIN: [{ href: "/admin", label: "Manage accounts", icon: "UserCog" }],
+  COMMITTEE: [{ href: "/committee", label: "NOS dossiers", short: "Dossiers", icon: "Gavel" }],
+  FINANCE: [{ href: "/finance", label: "Sanctions & payments", short: "Payments", icon: "Banknote" }],
+  ADMIN: [{ href: "/admin", label: "Manage accounts", short: "Accounts", icon: "UserCog" }],
   AUDITOR: [
-    { href: "/auditor", label: "Audit trail", icon: "ShieldCheck" },
-    { href: "/auditor/evidence", label: "Evidence vault", icon: "FileSearch" },
-    { href: "/tower", label: "Control tower", icon: "Settings2" },
+    { href: "/auditor", label: "Audit trail", short: "Audit", icon: "ShieldCheck" },
+    { href: "/auditor/evidence", label: "Evidence vault", short: "Evidence", icon: "FileSearch" },
+    { href: "/tower", label: "Control tower", short: "Tower", icon: "Settings2" },
   ],
 };
 
