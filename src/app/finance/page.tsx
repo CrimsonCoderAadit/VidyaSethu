@@ -34,7 +34,7 @@ export default async function FinancePage() {
       <h1 className="font-[family-name:var(--font-display)] text-3xl">Sanctions & payments</h1>
       <p className="mb-6 mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
         {pending} of {awards.length} sanctioned awards are awaiting a PFMS/DBT/Mission acknowledgement. This desk
-        tracks status; it does not replace those payment systems. Amounts below are estimates from each scheme's
+        tracks status; it does not replace those payment systems. Amounts below are estimates from each scheme&apos;s
         entitlement formula, not confirmed disbursement figures.
       </p>
 

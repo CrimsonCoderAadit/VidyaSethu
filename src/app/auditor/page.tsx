@@ -17,7 +17,7 @@ export default async function AuditorPage() {
       <h1 className="font-[family-name:var(--font-display)] text-3xl">Audit trail</h1>
       <p className="mb-6 mt-2 max-w-2xl text-sm text-[color:var(--muted)]">
         This desk exists so that every official act, a decision, a correction, a policy change, an account created,
-        is traceable to a named actor, a timestamp, and a scheme version, without needing to trust any single desk's
+        is traceable to a named actor, a timestamp, and a scheme version, without needing to trust any single desk&apos;s
         word for what happened. Nothing here can be edited or deleted.
       </p>
 

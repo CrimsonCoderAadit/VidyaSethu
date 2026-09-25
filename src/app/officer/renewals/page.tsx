@@ -17,7 +17,7 @@ export default async function RenewalsPage() {
       <h1 className="font-[family-name:var(--font-display)] mb-1 text-3xl">Renewal requests</h1>
       <p className="mb-6 max-w-2xl text-sm text-[color:var(--muted)]">
         {pending.length} request{pending.length === 1 ? "" : "s"} waiting on a decision. Renewal uses the current
-        scheme version's rules, not the version the original award was made under.
+        scheme version&apos;s rules, not the version the original award was made under.
       </p>
       {pending.length === 0 ? (
         <p className="card p-5 text-sm text-[color:var(--muted)]">No pending renewal requests.</p>
