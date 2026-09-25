@@ -4,7 +4,7 @@ import path from "path";
 import type { Database } from "./models";
 import { seedDatabase } from "./seed";
 
-const dir = path.join(process.cwd(), "data");
+const dir = process.env.VERCEL ? "/tmp/vidya-setu" : path.join(process.cwd(), "data");
 const file = path.join(dir, "store.json");
 
 function withDefaults(db: Database): Database {
