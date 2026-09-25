@@ -10,6 +10,7 @@ import {
   FileSearch,
   Gavel,
   LayoutDashboard,
+  MessageCircle,
   RefreshCw,
   ScrollText,
   Search,
@@ -17,6 +18,7 @@ import {
   ShieldCheck,
   UserCog,
   Users,
+  WifiOff,
   type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
@@ -37,6 +39,8 @@ const ICONS: Record<IconName, LucideIcon> = {
   UserCog,
   ShieldCheck,
   FileSearch,
+  MessageCircle,
+  WifiOff,
 };
 
 function isActive(pathname: string | null, href: string) {

@@ -4,6 +4,8 @@ import { requireRole } from "@/lib/auth";
 import { loadDb } from "@/lib/db";
 import { roleContact } from "@/lib/roles";
 import { humanizeEnum } from "@/lib/format";
+import { WifiOff } from "lucide-react";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 
 export default async function InoPage() {
@@ -21,6 +23,13 @@ export default async function InoPage() {
         {apps.length} application{apps.length === 1 ? "" : "s"} waiting on your confirmation of admission, programme
         and registration details. You confirm or flag it; the authorised decision stays with MoTA.
       </p>
+      <Link href="/ino/offline" className="card card-hover mb-6 flex items-center gap-3 p-4 text-sm">
+        <WifiOff className="h-5 w-5 shrink-0 text-[color:var(--accent)]" />
+        <span>
+          <span className="block font-semibold">Weak signal on campus? Use offline batch verification</span>
+          <span className="text-[color:var(--muted)]">Download the pending files, verify them with no network, and sync later.</span>
+        </span>
+      </Link>
       {apps.length === 0 ? (
         <p className="card p-5 text-sm text-[color:var(--muted)]">Nothing pending. New files appear here as soon as a scheme routes them to institution verification.</p>
       ) : null}

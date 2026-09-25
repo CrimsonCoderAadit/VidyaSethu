@@ -11,6 +11,7 @@ function withDefaults(db: Database): Database {
   db.renewals ??= [];
   db.aiFeedback ??= [];
   db.policyStatus ??= {};
+  db.outbox ??= [];
   for (const award of db.awards) {
     award.lifecycle ??= "AWARDED";
     award.milestones ??= [];

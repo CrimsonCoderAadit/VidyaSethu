@@ -5,12 +5,15 @@ import { APP_NAME, ROLE_HINT, ROLE_LABEL, ROLE_NAV } from "@/lib/roles";
 import { GraduationCap } from "lucide-react";
 import Link from "next/link";
 import { PageTransition } from "./motion/PageTransition";
+import { getT } from "@/lib/lang";
+import { LanguageSwitcher } from "./LanguageSwitcher";
 import { NotificationBell } from "./NotificationBell";
 import { BottomNav, SidebarNav } from "./SidebarNav";
 import { SignOutButton } from "./SignOutButton";
 
-export function Shell({ user, children }: { user: UserRecord; children: React.ReactNode }) {
-  const links = ROLE_NAV[user.role] ?? [];
+export async function Shell({ user, children }: { user: UserRecord; children: React.ReactNode }) {
+  const { lang, t } = await getT();
+  const links = (ROLE_NAV[user.role] ?? []).map((l) => ({ ...l, label: t(l.label), short: t(l.short) }));
   const notifications = loadDb().notifications.filter((n) => n.userId === user.id);
   return (
     <div className="flex min-h-screen">
@@ -42,6 +45,7 @@ export function Shell({ user, children }: { user: UserRecord; children: React.Re
             <span className="truncate font-[family-name:var(--font-display)] text-base font-semibold text-white">{APP_NAME}</span>
           </Link>
           <div className="flex items-center gap-1 text-white">
+            <LanguageSwitcher lang={lang} tone="dark" />
             <NotificationBell notifications={notifications} tone="dark" />
             <form action={logoutAction}>
               <SignOutButton iconOnly className="flex h-11 w-11 items-center justify-center rounded-md text-white/75" />
@@ -49,8 +53,11 @@ export function Shell({ user, children }: { user: UserRecord; children: React.Re
           </div>
         </header>
         <header className="relative z-10 hidden items-center justify-between border-b border-[color:var(--line)] bg-white px-8 py-4 md:flex">
-          <p className="text-sm text-[color:var(--muted)]">{ROLE_HINT[user.role]}</p>
-          <NotificationBell notifications={notifications} />
+          <p className="text-sm text-[color:var(--muted)]">{t(ROLE_HINT[user.role])}</p>
+          <div className="flex items-center gap-3">
+            <LanguageSwitcher lang={lang} />
+            <NotificationBell notifications={notifications} />
+          </div>
         </header>
         <div className="relative overflow-hidden">
           <div className="ambient pointer-events-none absolute inset-0 overflow-hidden">

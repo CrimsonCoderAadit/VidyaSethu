@@ -16,6 +16,10 @@ export type UserRecord = {
   password: string;
   institutionId?: string;
   stateCode?: string;
+  /** Registered mobile; the WhatsApp/SMS bot identifies applicants by it. */
+  mobile?: string;
+  /** Preferred language for bot replies and alerts. */
+  lang?: "en" | "hi" | "or";
 };
 
 export type DeficiencyRecord = {
@@ -26,6 +30,18 @@ export type DeficiencyRecord = {
   status: "OPEN" | "RESOLVED";
   createdAt: string;
   resolvedAt?: string;
+};
+
+/** An outbound WhatsApp / SMS message. WhatsApp first; SMS is the fallback for feature phones. */
+export type OutboxMessage = {
+  id: string;
+  userId: string;
+  to: string;
+  channel: "WHATSAPP" | "SMS";
+  body: string;
+  at: string;
+  status: "QUEUED" | "SENT" | "DELIVERED";
+  direction: "OUT" | "IN";
 };
 
 export type AuditEvent = {
@@ -147,4 +163,5 @@ export type Database = {
   renewals: RenewalRecord[];
   aiFeedback: AiFeedbackRecord[];
   policyStatus: Record<string, PolicyStatus>;
+  outbox: OutboxMessage[];
 };

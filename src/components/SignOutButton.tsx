@@ -10,6 +10,12 @@ export function SignOutButton({ className, iconOnly = false }: { className?: str
       className={className}
       aria-label="Sign out"
       onClick={() => {
+        try {
+          localStorage.removeItem("vs-ino-batch");
+          localStorage.removeItem("vs-ino-queue");
+        } catch {
+          /* storage unavailable */
+        }
         if ("caches" in window) {
           caches.keys().then((keys) => keys.filter((k) => k.endsWith("-pages")).forEach((k) => caches.delete(k)));
         }

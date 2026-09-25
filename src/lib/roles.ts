@@ -18,7 +18,9 @@ export type IconName =
   | "Banknote"
   | "UserCog"
   | "ShieldCheck"
-  | "FileSearch";
+  | "FileSearch"
+  | "MessageCircle"
+  | "WifiOff";
 
 export const APP_NAME = "Vidya Setu";
 export const APP_TAGLINE = "MoTA Scholarship & Fellowship Portal";
@@ -53,8 +55,12 @@ export const ROLE_NAV: Record<Role, NavItem[]> = {
     { href: "/applicant", label: "My applications", short: "Home", icon: "LayoutDashboard" },
     { href: "/applicant/schemes", label: "Apply for a scheme", short: "Apply", icon: "BookOpenCheck" },
     { href: "/applicant/precheck", label: "Eligibility pre-check", short: "Check", icon: "Search" },
+    { href: "/applicant/whatsapp", label: "WhatsApp / SMS", short: "Chat", icon: "MessageCircle" },
   ],
-  INO: [{ href: "/ino", label: "Institution verification", short: "Verify", icon: "Building2" }],
+  INO: [
+    { href: "/ino", label: "Institution verification", short: "Verify", icon: "Building2" },
+    { href: "/ino/offline", label: "Offline batch", short: "Offline", icon: "WifiOff" },
+  ],
   STATE: [{ href: "/state", label: "State / UT queue", short: "Queue", icon: "ClipboardList" }],
   MOTA: [
     { href: "/officer", label: "Review queue", short: "Queue", icon: "LayoutDashboard" },

@@ -3,6 +3,7 @@ import { Shell, Stamp } from "@/components/Shell";
 import { StagePipeline } from "@/components/StagePipeline";
 import { consistencyChecks } from "@/engine/intelligence";
 import {
+  confirmAssistedAction,
   confirmFactAction,
   correctFactAction,
   officerDecisionAction,
@@ -68,10 +69,33 @@ export default async function OfficerCase({ params }: { params: Promise<{ id: st
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <span className="font-medium">{humanizeEnum(d.documentType)}</span>
                   <span className="flex gap-1.5">
+                    {d.source === "DIGILOCKER" ? <span className="stamp text-spine" title={d.digilockerUri}>DigiLocker · issuer-signed</span> : null}
                     <span className="stamp">OCR {Math.round(d.ocrConfidence * 100)}%</span>
                     <span className={`stamp ${d.trust <= "C" ? "text-spine" : d.trust === "D" ? "text-rule" : "text-danger"}`}>trust {d.trust}</span>
                   </span>
                 </div>
+                {d.recovery?.path === "ASSISTED_ENTRY" && d.recovery.status === "OPEN" ? (
+                  <div className="mt-2 rounded-md bg-[color:var(--warn-bg)] p-3 text-xs">
+                    <p className="font-semibold">Handwritten: check these {d.recovery.typedFields?.length ?? 0} field(s) against the photo</p>
+                    <table className="mt-2 w-full text-left">
+                      <tbody>
+                        {(d.recovery.typedFields ?? []).map((f) => (
+                          <tr key={f} className="border-t border-black/10">
+                            <td className="py-1 pr-3 text-[color:var(--muted)]">{humanizeField(f)}</td>
+                            <td className="py-1 font-semibold">{String(app.facts.find((x) => x.field === f)?.value ?? "—")}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {user.role !== "AUDITOR" ? (
+                      <form action={confirmAssistedAction.bind(null, app.id, d.id)} className="mt-2">
+                        <button className="btn-primary px-3 py-1.5 text-xs font-semibold">Photo matches: confirm</button>
+                      </form>
+                    ) : null}
+                  </div>
+                ) : d.recovery && d.recovery.status === "OPEN" ? (
+                  <p className="mt-2 text-xs text-[color:var(--muted)]">Unreadable photo was sent back to the applicant ({d.recovery.path === "DIGILOCKER" ? "one-tap DigiLocker fetch" : "retake"}). No action needed here.</p>
+                ) : null}
                 <table className="mt-2 w-full text-left text-xs">
                   <tbody>
                     {Object.entries(d.extracted).map(([k, v]) => (

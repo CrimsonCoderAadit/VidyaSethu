@@ -3,6 +3,7 @@ import { ingestDocument } from "@/engine/documents";
 import { consistencyChecks, routeHitl } from "@/engine/intelligence";
 import type { Fact } from "@/engine/types";
 import { NFST, NOS, POST_MATRIC, PRE_MATRIC, TOP_CLASS, schemeByCode } from "@/schemes/registry";
+import { handleInbound, queueApplicantAlert } from "./bot";
 import type { ApplicationRecord, Database, UserRecord } from "./models";
 
 function facts(entries: Record<string, string | number | boolean | null>, source: Fact["source"] = "APPLICANT"): Fact[] {
@@ -61,8 +62,8 @@ function app(partial: Omit<ApplicationRecord, "eligibility" | "hitlLevel" | "hit
 }
 
 const users: UserRecord[] = [
-  { id: "u-app", name: "Meena Xaxa", email: "applicant@mota.demo", role: "APPLICANT", password: "demo" },
-  { id: "u-app2", name: "Birsa Munda", email: "birsa@mota.demo", role: "APPLICANT", password: "demo" },
+  { id: "u-app", name: "Meena Xaxa", email: "applicant@mota.demo", role: "APPLICANT", password: "demo", mobile: "9876543210", lang: "hi" },
+  { id: "u-app2", name: "Birsa Munda", email: "birsa@mota.demo", role: "APPLICANT", password: "demo", mobile: "9123456780", lang: "en" },
   { id: "u-ino", name: "Dr. Ananya Rao (IIT Delhi INO)", email: "ino@mota.demo", role: "INO", password: "demo", institutionId: "IITD" },
   { id: "u-state", name: "Jharkhand State Nodal Officer", email: "state@mota.demo", role: "STATE", password: "demo", stateCode: "JH" },
   { id: "u-mota", name: "MoTA Verification Officer", email: "officer@mota.demo", role: "MOTA", password: "demo" },
@@ -444,7 +445,7 @@ export function seedDatabase(): Database {
     ),
   ];
 
-  return {
+  const db: Database = {
     users,
     applications,
     notifications: [
@@ -535,5 +536,16 @@ export function seedDatabase(): Database {
       NFST: "PUBLISHED",
       NOS: "PUBLISHED",
     },
+    outbox: [],
   };
+
+  // Demo WhatsApp history for Meena (Hindi): a proactive alert, then a status query.
+  const meena = db.users.find((u) => u.id === "u-app")!;
+  const note = db.notifications.find((n) => n.userId === "u-app");
+  if (note) queueApplicantAlert(db, meena, note.title, note.body);
+  handleInbound(db, meena.mobile!, "STATUS", "WHATSAPP");
+  db.outbox.forEach((m, i) => {
+    m.at = new Date(Date.parse("2026-09-12T08:00:00.000Z") + (db.outbox.length - i) * 60_000).toISOString();
+  });
+  return db;
 }

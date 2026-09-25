@@ -1,4 +1,6 @@
+import { LanguageSwitcher } from "@/components/LanguageSwitcher";
 import { LoginForm } from "@/components/LoginForm";
+import { getT } from "@/lib/lang";
 import { Reveal } from "@/components/motion/Reveal";
 import { HeroSceneClient } from "@/components/three/HeroSceneClient";
 import { resetDemoAction } from "@/lib/actions";
@@ -8,6 +10,7 @@ import { GraduationCap } from "lucide-react";
 
 export default async function LoginPage() {
   const users = loadDb().users;
+  const { lang, t } = await getT();
 
   return (
     <div className="flex min-h-screen">
@@ -50,7 +53,10 @@ export default async function LoginPage() {
       </div>
 
       <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-[color:var(--paper)] px-4 py-12">
-        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute right-4 top-4 z-10">
+          <LanguageSwitcher lang={lang} />
+        </div>
+        <div className="ambient pointer-events-none absolute inset-0 overflow-hidden">
           <div className="content-orb content-orb-a" />
           <div className="content-orb content-orb-b" />
           <div className="content-grid absolute inset-0" />
@@ -67,7 +73,7 @@ export default async function LoginPage() {
 
           <Reveal>
             <div className="card p-6 shadow-sm">
-              <LoginForm users={users} />
+              <LoginForm users={users} labels={{ role: t("Desk / role"), account: t("Account"), signIn: t("Sign in") }} />
             </div>
           </Reveal>
 

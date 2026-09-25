@@ -1,16 +1,22 @@
 "use server";
 
 import { evaluateEligibility, computeEntitlement } from "@/engine/eligibility";
-import { ingestDocument } from "@/engine/documents";
+import { ingestDocument, ingestFromDigiLocker, ingestWithCondition, openRecoveries, type CaptureCondition } from "@/engine/documents";
 import { consistencyChecks, routeHitl } from "@/engine/intelligence";
 import { runSelection } from "@/engine/selection";
 import type { Fact, WorkflowStage } from "@/engine/types";
 import { schemeByCode } from "@/schemes/registry";
+import { revalidatePath } from "next/cache";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { COOKIE } from "./auth";
+import { humanizeEnum } from "./format";
+import { DIGILOCKER_ISSUABLE, fetchIssued } from "./digilocker";
+import { handleInbound, queueApplicantAlert } from "./bot";
+import { asLang, LANG_COOKIE } from "./i18n";
 import { loadDb, mutateDb, resetDb } from "./db";
 import type { UserRecord } from "./models";
+import { applyInoDecision } from "./ino";
 import { recomputeApplication } from "./pipeline";
 import { roleHome } from "./roles";
 
@@ -27,6 +33,8 @@ function audit(db: ReturnType<typeof loadDb>, actor: { id: string; name: string 
 }
 
 function notify(db: ReturnType<typeof loadDb>, userId: string, title: string, body: string) {
+  const target = db.users.find((u) => u.id === userId);
+  if (target) queueApplicantAlert(db, target, title, body);
   db.notifications.unshift({
     id: `n-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     userId,
@@ -48,6 +56,12 @@ export async function loginAction(formData: FormData) {
   if (!user) redirect("/?error=unknown");
   (await cookies()).set(COOKIE, user.id, { httpOnly: true, sameSite: "lax", path: "/" });
   redirect(roleHome(user.role));
+}
+
+export async function setLanguageAction(formData: FormData) {
+  const lang = asLang(String(formData.get("lang") ?? "en"));
+  (await cookies()).set(LANG_COOKIE, lang, { path: "/", maxAge: 60 * 60 * 24 * 365, sameSite: "lax" });
+  revalidatePath("/", "layout");
 }
 
 export async function logoutAction() {
@@ -113,20 +127,39 @@ export async function submitApplicationAction(schemeCode: string, formData: Form
     return { field: field.id, value, source: "APPLICANT", confidence: 1, verified: true };
   });
 
+  const stateCode = String(facts.find((f) => f.field === "domicileState")?.value ?? user.stateCode ?? "JH");
+  const applicantName = String(facts.find((f) => f.field === "fullName")?.value || user.name);
+  const uploaded = (id: string) => {
+    const f = formData.get(`doc-${id}`);
+    return f instanceof File && f.size > 0 ? f : null;
+  };
   const docs = scheme.requiredDocuments
-    .filter((d) => d.mandatory || formData.get(`doc-${d.id}`))
-    .map((d) =>
-      ingestDocument({
+    .filter((d) => d.mandatory || uploaded(d.id) || formData.get(`dl-${d.id}`))
+    .map((d) => {
+      if (formData.get(`dl-${d.id}`) === "1") {
+        const [issued] = fetchIssued([d.id], { name: applicantName, stateCode });
+        if (issued) return ingestFromDigiLocker({ applicationId: "pending", documentType: d.id, uri: issued.uri, fields: issued.fields });
+      }
+      // Demo override first, then the on-device quality check from the phone, else a clean capture.
+      const condition = (String(formData.get(`q-${d.id}`) || formData.get(`qc-${d.id}`) || "CLEAR")) as CaptureCondition;
+      return ingestWithCondition({
         applicationId: "pending",
         documentType: d.id,
-        fileName: `${d.id.toLowerCase()}.pdf`,
-      }),
-    );
+        fileName: uploaded(d.id)?.name ?? `${d.id.toLowerCase()}.jpg`,
+        condition,
+        digilockerIssuable: DIGILOCKER_ISSUABLE.has(d.id),
+      });
+    });
+  const recoveries = openRecoveries(docs);
+  const applicantFixes = recoveries.filter((r) => r.path !== "ASSISTED_ENTRY");
+  const assisted = docs.filter((d) => d.recovery?.path === "ASSISTED_ENTRY");
 
   const eligibility = evaluateEligibility(scheme, facts);
   const findings = consistencyChecks(facts, docs);
+  // Documents in a recovery path are handled by that path, not by dragging the whole file to L2.
+  const readable = docs.filter((x) => !x.recovery);
   const hitl = routeHitl({
-    ocrFloor: docs.length ? Math.min(...docs.map((x) => x.ocrConfidence)) : 1,
+    ocrFloor: readable.length ? Math.min(...readable.map((x) => x.ocrConfidence)) : 1,
     findings,
     missingEvidence: eligibility.outcome === "DEFICIENT",
     institutionPending: scheme.workflow.includes("INSTITUTION_VERIFICATION"),
@@ -138,11 +171,19 @@ export async function submitApplicationAction(schemeCode: string, formData: Form
     d.applicationId = id;
   });
 
-  const nextStage: WorkflowStage = scheme.workflow.includes("INSTITUTION_VERIFICATION")
+  if (assisted.length) {
+    hitl.reasons.push(...assisted.map((d) => `Handwritten ${humanizeEnum(d.documentType)}: compare ${d.recovery!.typedFields?.length ?? 0} typed field(s) against the photo.`));
+    if (hitl.level === "L0") hitl.level = "L1";
+  }
+
+  const routedStage: WorkflowStage = scheme.workflow.includes("INSTITUTION_VERIFICATION")
     ? "INSTITUTION_VERIFICATION"
     : scheme.workflow.includes("STATE_VERIFICATION")
       ? "STATE_VERIFICATION"
       : "MOTA_SCRUTINY";
+  // Unreadable uploads go straight back to the applicant (retake or one-tap DigiLocker) before
+  // any officer spends time on the file.
+  const nextStage: WorkflowStage = applicantFixes.length ? "DEFICIENCY" : routedStage;
 
   mutateDb((store) => {
     store.applications.unshift({
@@ -160,17 +201,34 @@ export async function submitApplicationAction(schemeCode: string, formData: Form
       eligibility,
       hitlLevel: hitl.level,
       hitlReasons: hitl.reasons,
-      deficiencies: [],
+      returnStage: applicantFixes.length ? routedStage : undefined,
+      deficiencies: docs
+        .filter((d) => d.recovery && d.recovery.path !== "ASSISTED_ENTRY")
+        .map((d, i) => ({
+          id: `def-${Date.now()}-${i}`,
+          applicationId: id,
+          field: d.documentType,
+          reason: `${humanizeEnum(d.documentType)}: ${d.recovery!.reason} ${d.recovery!.guidance}`,
+          status: "OPEN" as const,
+          createdAt: new Date().toISOString(),
+        })),
       timeline: [
         { at: new Date().toISOString(), stage: "SUBMITTED", note: "Submitted by applicant", actor: user.name },
-        { at: new Date().toISOString(), stage: nextStage, note: "Routed by scheme workflow", actor: "workflow-engine" },
+        applicantFixes.length
+          ? { at: new Date().toISOString(), stage: "DEFICIENCY", note: `${applicantFixes.length} unreadable document(s) auto-returned to applicant for retake / DigiLocker fetch. No officer time spent.`, actor: "document-intelligence" }
+          : { at: new Date().toISOString(), stage: nextStage, note: "Routed by scheme workflow", actor: "workflow-engine" },
       ],
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     });
     audit(store, user, "SUBMIT", `Submitted ${scheme.shortName} application ${id}`, id);
     notify(store, user.id, `${id} submitted`, `Eligibility preview: ${eligibility.outcome}. This is not a final award.`);
-    if (nextStage === "INSTITUTION_VERIFICATION") {
+    const target = store.users.find((u) => u.id === user.id);
+    const mobile = String(facts.find((f) => f.field === "mobile")?.value ?? "").replace(/\D/g, "");
+    if (target && mobile.length >= 10) target.mobile = mobile.slice(-10);
+    if (applicantFixes.length) {
+      notify(store, user.id, `${id}: ${applicantFixes.length} photo(s) could not be read`, applicantFixes.map((r) => r.guidance).join(" "));
+    } else if (nextStage === "INSTITUTION_VERIFICATION") {
       notifyRole(store, "INO", `${id} needs institution verification`, `${user.name}'s ${scheme.shortName} application is waiting on admission/programme confirmation.`);
     } else if (nextStage === "STATE_VERIFICATION") {
       notifyRole(store, "STATE", `${id} needs State/UT verification`, `${user.name}'s ${scheme.shortName} application is waiting on your desk.`);
@@ -363,35 +421,7 @@ export async function inoVerifyAction(applicationId: string, admit: boolean, not
     const user = db.users.find((u) => u.id === userId);
     const app = db.applications.find((a) => a.id === applicationId);
     if (!user || !app) return;
-    const fact = app.facts.find((f) => f.field === "institutionVerified");
-    if (fact) {
-      fact.value = admit;
-      fact.source = "INSTITUTION";
-      fact.verified = true;
-    } else {
-      app.facts.push({ field: "institutionVerified", value: admit, source: "INSTITUTION", confidence: 1, verified: true });
-    }
-    const scheme = schemeByCode(app.schemeCode);
-    app.eligibility = evaluateEligibility(scheme, app.facts);
-    recomputeApplication(app);
-    if (!admit) {
-      app.returnStage = "INSTITUTION_VERIFICATION";
-      app.deficiencies.unshift({
-        id: `def-${Date.now()}`,
-        applicationId,
-        reason: note,
-        status: "OPEN",
-        createdAt: new Date().toISOString(),
-      });
-    }
-    app.status = admit ? "MOTA_SCRUTINY" : "DEFICIENCY";
-    app.timeline.push({ at: new Date().toISOString(), stage: app.status, note, actor: user.name });
-    audit(db, user, "INO_VERIFY", note, applicationId);
-    if (admit) {
-      notifyRole(db, "MOTA", `${applicationId} forwarded by institution`, `${user.name} verified admission/programme details. Ready for scrutiny.`);
-    } else {
-      notify(db, app.applicantId, `${applicationId} — institution flagged an issue`, note);
-    }
+    applyInoDecision(db, user, app, admit, note);
   });
 }
 
@@ -558,5 +588,74 @@ export async function advancePolicyStatusAction(schemeCode: string) {
     const next = order[Math.min(idx + 1, order.length - 1)];
     db.policyStatus[schemeCode] = next;
     if (user) audit(db, user, "POLICY_STATUS", `${schemeCode}: ${current} → ${next}`, undefined);
+  });
+}
+
+/** WhatsApp simulator on the applicant desk: same code path as the real webhook. */
+export async function botSendAction(channel: "WHATSAPP" | "SMS", formData: FormData) {
+  const userId = (await cookies()).get(COOKIE)?.value;
+  const text = String(formData.get("text") ?? "").trim();
+  if (!text) return;
+  mutateDb((db) => {
+    const user = db.users.find((u) => u.id === userId);
+    if (!user?.mobile) return;
+    handleInbound(db, user.mobile, text, channel);
+  });
+}
+
+/** Applicant fixes an unreadable document: one-tap DigiLocker fetch, or a retaken photo. */
+export async function recoverDocumentAction(applicationId: string, docId: string, mode: "DIGILOCKER" | "RETAKE") {
+  const userId = (await cookies()).get(COOKIE)?.value;
+  mutateDb((db) => {
+    const user = db.users.find((u) => u.id === userId);
+    const app = db.applications.find((a) => a.id === applicationId && a.applicantId === userId);
+    const idx = app?.documents.findIndex((d) => d.id === docId) ?? -1;
+    if (!user || !app || idx < 0) return;
+    const old = app.documents[idx];
+    const name = String(app.facts.find((f) => f.field === "fullName")?.value || app.applicantName);
+    const [issued] = mode === "DIGILOCKER" ? fetchIssued([old.documentType], { name, stateCode: app.stateCode }) : [];
+    const fresh = issued
+      ? ingestFromDigiLocker({ applicationId, documentType: old.documentType, uri: issued.uri, fields: issued.fields })
+      : ingestDocument({ applicationId, documentType: old.documentType, fileName: `${old.documentType.toLowerCase()}-retake.jpg` });
+    app.documents[idx] = fresh;
+    for (const d of app.deficiencies) {
+      if (d.status === "OPEN" && d.field === old.documentType) {
+        d.status = "RESOLVED";
+        d.resolvedAt = new Date().toISOString();
+      }
+    }
+    const how = issued ? `fetched from DigiLocker (${issued.uri})` : "retaken photo passed quality check";
+    app.timeline.push({ at: new Date().toISOString(), stage: app.status, note: `${humanizeEnum(old.documentType)} ${how}`, actor: user.name });
+    audit(db, user, "DOC_RECOVERY", `${old.documentType} ${how}`, applicationId);
+
+    const stillOpen = app.deficiencies.some((d) => d.status === "OPEN");
+    if (!stillOpen && app.status === "DEFICIENCY") {
+      const next = app.returnStage ?? "MOTA_SCRUTINY";
+      app.status = next;
+      app.returnStage = undefined;
+      app.timeline.push({ at: new Date().toISOString(), stage: next, note: "All documents readable; routed by scheme workflow", actor: "workflow-engine" });
+      const role = next === "INSTITUTION_VERIFICATION" ? "INO" : next === "STATE_VERIFICATION" ? "STATE" : "MOTA";
+      notifyRole(db, role, `${applicationId} ready for your desk`, `${app.applicantName} fixed every unreadable document without officer involvement.`);
+    }
+    recomputeApplication(app);
+  });
+}
+
+/** Officer confirms a handwritten document matches the values the applicant typed. */
+export async function confirmAssistedAction(applicationId: string, docId: string) {
+  const userId = (await cookies()).get(COOKIE)?.value;
+  mutateDb((db) => {
+    const user = db.users.find((u) => u.id === userId);
+    const app = db.applications.find((a) => a.id === applicationId);
+    const doc = app?.documents.find((d) => d.id === docId);
+    if (!user || !app || !doc?.recovery || !["MOTA", "INO", "STATE"].includes(user.role)) return;
+    for (const f of doc.recovery.typedFields ?? []) {
+      doc.extracted[f] = app.facts.find((x) => x.field === f)?.value ?? null;
+    }
+    doc.recovery.status = "RESOLVED";
+    doc.trust = "B";
+    recomputeApplication(app);
+    app.timeline.push({ at: new Date().toISOString(), stage: app.status, note: `Handwritten ${humanizeEnum(doc.documentType)} confirmed against typed values`, actor: user.name });
+    audit(db, user, "ASSISTED_CONFIRM", `${doc.documentType} handwritten values confirmed`, applicationId);
   });
 }

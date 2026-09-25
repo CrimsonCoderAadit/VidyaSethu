@@ -187,6 +187,21 @@ export type DocumentRecord = {
   extracted: Record<string, string | number | boolean | null>;
   ocrConfidence: number;
   trust: EvidenceTrust;
+  /** Where the evidence came from. DigiLocker = issuer-signed XML, no OCR involved. */
+  source?: "UPLOAD" | "DIGILOCKER";
+  digilockerUri?: string;
+  /** Set when OCR could not read the upload; says how it gets fixed without an officer bottleneck. */
+  recovery?: DocumentRecovery;
+};
+
+export type DocumentRecovery = {
+  path: "RETAKE" | "DIGILOCKER" | "ASSISTED_ENTRY";
+  reason: string;
+  /** Guidance shown to the applicant (retake tips / which fields to type). */
+  guidance: string;
+  status: "OPEN" | "RESOLVED";
+  /** Fields the applicant typed for an ASSISTED_ENTRY recovery; the officer compares only these. */
+  typedFields?: string[];
 };
 
 export type EligibilityTrace = {

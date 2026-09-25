@@ -1,7 +1,9 @@
 import { DynamicForm } from "@/components/DynamicForm";
 import { Shell } from "@/components/Shell";
 import { requireRole } from "@/lib/auth";
+import { DIGILOCKER_ISSUABLE, fetchIssued } from "@/lib/digilocker";
 import { humanizeSelectionModel } from "@/lib/format";
+import { getLang } from "@/lib/lang";
 import { schemeByCode } from "@/schemes/registry";
 import { redirect } from "next/navigation";
 
@@ -10,6 +12,8 @@ export default async function ApplyPage({ params }: { params: Promise<{ code: st
   if (!user) redirect("/");
   const { code } = await params;
   const scheme = schemeByCode(code);
+  const lang = await getLang();
+  const issued = fetchIssued(scheme.requiredDocuments.map((d) => d.id).filter((id) => DIGILOCKER_ISSUABLE.has(id)), { name: user.name, stateCode: user.stateCode });
   return (
     <Shell user={user}>
       <p className="meta">
@@ -27,7 +31,7 @@ export default async function ApplyPage({ params }: { params: Promise<{ code: st
           ))}
         </aside>
       ) : null}
-      <DynamicForm scheme={scheme} />
+      <DynamicForm scheme={scheme} lang={lang} issued={issued} />
     </Shell>
   );
 }

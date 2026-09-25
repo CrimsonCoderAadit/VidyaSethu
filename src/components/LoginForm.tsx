@@ -5,7 +5,13 @@ import type { UserRecord } from "@/lib/models";
 import { ROLE_LABEL } from "@/lib/roles";
 import { useMemo, useState } from "react";
 
-export function LoginForm({ users }: { users: UserRecord[] }) {
+export function LoginForm({
+  users,
+  labels = { role: "Desk / role", account: "Account", signIn: "Sign in" },
+}: {
+  users: UserRecord[];
+  labels?: { role: string; account: string; signIn: string };
+}) {
   const roles = useMemo(() => {
     const seen = new Set<UserRecord["role"]>();
     return users.map((u) => u.role).filter((r) => (seen.has(r) ? false : seen.add(r)));
@@ -24,7 +30,7 @@ export function LoginForm({ users }: { users: UserRecord[] }) {
   return (
     <form action={loginAction} className="space-y-4">
       <div>
-        <label className="field-label" htmlFor="role">Desk / role</label>
+        <label className="field-label" htmlFor="role">{labels.role}</label>
         <select
           id="role"
           value={role}
@@ -37,7 +43,7 @@ export function LoginForm({ users }: { users: UserRecord[] }) {
         </select>
       </div>
       <div>
-        <label className="field-label" htmlFor="email">Account</label>
+        <label className="field-label" htmlFor="email">{labels.account}</label>
         <select
           id="email"
           name="email"
@@ -55,7 +61,7 @@ export function LoginForm({ users }: { users: UserRecord[] }) {
         <input id="password" name="password" type="password" defaultValue="demo" className="field-input" />
         <p className="mt-1 text-xs text-[color:var(--muted)]">Every demo account uses the password <span className="meta">demo</span>.</p>
       </div>
-      <button className="btn-primary w-full px-4 py-2.5 text-sm font-semibold">Sign in</button>
+      <button className="btn-primary w-full px-4 py-2.5 text-sm font-semibold">{labels.signIn}</button>
     </form>
   );
 }

@@ -1,6 +1,7 @@
 import { LiteModeProvider } from "@/components/LiteMode";
 import type { Metadata, Viewport } from "next";
 import { IBM_Plex_Mono, Public_Sans, Zilla_Slab } from "next/font/google";
+import { getLang } from "@/lib/lang";
 import "./globals.css";
 
 const display = Zilla_Slab({
@@ -37,9 +38,10 @@ export const viewport: Viewport = {
   themeColor: "#1f3a5f",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  const lang = await getLang();
   return (
-    <html lang="en">
+    <html lang={lang}>
       <body className={`${display.variable} ${body.variable} ${mono.variable} antialiased`}>
         <LiteModeProvider>{children}</LiteModeProvider>
       </body>

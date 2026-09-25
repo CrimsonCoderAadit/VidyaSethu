@@ -1,4 +1,6 @@
 import { BarRows } from "@/components/BarChart";
+import { FundRunway } from "@/components/FundRunway";
+import { demoFundPlans, forecastFund } from "@/engine/forecast";
 import { AnimatedNumber } from "@/components/motion/AnimatedNumber";
 import { Reveal } from "@/components/motion/Reveal";
 import { Shell } from "@/components/Shell";
@@ -31,6 +33,16 @@ export default async function TowerPage() {
     : 0;
   const reviewRequired = db.applications.filter((a) => a.hitlLevel === "L2" || a.hitlLevel === "L3").length;
   const appeals = db.applications.filter((a) => a.isAppeal).length;
+  const liveEligible = Object.fromEntries(byScheme.map(({ s, eligible }) => [s.code, eligible]));
+  const forecasts = demoFundPlans(liveEligible).map((p) => forecastFund(p));
+  const allDocs = db.applications.flatMap((a) => a.documents);
+  const docStats = [
+    { label: "DigiLocker (no OCR)", value: allDocs.filter((d) => d.source === "DIGILOCKER").length },
+    { label: "Auto-returned to applicant", value: allDocs.filter((d) => d.recovery && d.recovery.path !== "ASSISTED_ENTRY").length },
+    { label: "Handwritten: field check", value: allDocs.filter((d) => d.recovery?.path === "ASSISTED_ENTRY").length },
+    { label: "Read by OCR", value: allDocs.filter((d) => !d.recovery && d.source !== "DIGILOCKER").length },
+  ];
+  const schemeNames = Object.fromEntries(SCHEMES.map((s) => [s.code, s.shortName]));
 
   return (
     <Shell user={user}>
@@ -58,6 +70,21 @@ export default async function TowerPage() {
           <p className="font-[family-name:var(--font-display)] text-3xl"><AnimatedNumber value={appeals} /></p>
         </Reveal>
       </div>
+
+      <Reveal index={4}>
+        <FundRunway forecasts={forecasts} names={schemeNames} />
+      </Reveal>
+
+      <Reveal index={4}>
+        <section className="card mt-6 p-5">
+          <h2 className="font-semibold">Where documents come from, and what happens when OCR fails</h2>
+          <p className="mb-4 mt-1 text-sm text-[color:var(--muted)]">
+            Unreadable uploads never land in the MoTA queue. They go back to the applicant within seconds, with a retake tip or a
+            one-tap DigiLocker fetch. Handwritten certificates get a field-level check instead of a full manual review.
+          </p>
+          <BarRows rows={docStats} tone="accent" />
+        </section>
+      </Reveal>
 
       <div className="mt-6 grid gap-6 lg:grid-cols-2">
         <Reveal index={4}>
