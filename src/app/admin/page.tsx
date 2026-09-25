@@ -12,7 +12,7 @@ const ROLES: Role[] = ["APPLICANT", "INO", "STATE", "MOTA", "COMMITTEE", "FINANC
 export default async function AdminPage() {
   const user = await requireRole(["ADMIN"]);
   if (!user) redirect("/");
-  const users = loadDb().users;
+  const users = (await loadDb()).users;
   const byRole = new Map<string, number>();
   for (const u of users) byRole.set(ROLE_LABEL[u.role], (byRole.get(ROLE_LABEL[u.role]) ?? 0) + 1);
 

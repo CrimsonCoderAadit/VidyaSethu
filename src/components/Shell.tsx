@@ -14,7 +14,7 @@ import { SignOutButton } from "./SignOutButton";
 export async function Shell({ user, children }: { user: UserRecord; children: React.ReactNode }) {
   const { lang, t } = await getT();
   const links = (ROLE_NAV[user.role] ?? []).map((l) => ({ ...l, label: t(l.label), short: t(l.short) }));
-  const notifications = loadDb().notifications.filter((n) => n.userId === user.id);
+  const notifications = (await loadDb()).notifications.filter((n) => n.userId === user.id);
   return (
     <div className="flex min-h-screen">
       <aside
@@ -77,5 +77,5 @@ export async function Shell({ user, children }: { user: UserRecord; children: Re
 
 // Re-exported so existing `import { Shell, Stamp } from "@/components/Shell"` call
 // sites keep working. Stamp itself lives in its own module (no server imports)
-// so client components can import it without pulling in Shell's loadDb() usage.
+// so client components can import it without pulling in Shell's (await loadDb()) usage.
 export { Stamp } from "./Stamp";

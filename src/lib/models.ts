@@ -1,3 +1,4 @@
+import type { DedupFinding } from "@/engine/dedup";
 import type {
   DocumentRecord,
   EligibilityResult,
@@ -147,6 +148,10 @@ export type ApplicationRecord = {
   committeeScore?: number;
   committeeNote?: string;
   authorisedDecision?: "APPROVED" | "REJECTED" | "DEFERRED";
+  /** Keyed hash of the Aadhaar number (never the number itself) for deduplication. */
+  identityHash?: string;
+  aadhaarLast4?: string;
+  dedup?: DedupFinding[];
   isAppeal?: boolean;
   appealReason?: string;
   createdAt: string;

@@ -10,7 +10,7 @@ import { redirect } from "next/navigation";
 export default async function PolicyStudio() {
   const user = await requireRole(["MOTA"]);
   if (!user) redirect("/");
-  const policyStatus = loadDb().policyStatus;
+  const policyStatus = (await loadDb()).policyStatus;
   return (
     <Shell user={user}>
       <h1 className="font-[family-name:var(--font-display)] text-3xl">Policy studio</h1>

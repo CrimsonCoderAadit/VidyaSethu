@@ -6,6 +6,7 @@ import type { IssuedDocument } from "@/lib/digilocker";
 import { t as translate, type Lang } from "@/lib/i18n";
 import { Camera, CheckCircle2, ShieldCheck } from "lucide-react";
 import { useState } from "react";
+import { ReadAloud, VoiceInput } from "./Voice";
 
 type Capture = { before: number; after: number; condition: "CLEAR" | "BLURRY" | "DARK" };
 
@@ -124,6 +125,13 @@ export function DynamicForm({ scheme, lang, issued }: { scheme: SchemeConfig; la
       {sections.map((section) => (
         <fieldset key={section} className="card p-4 md:p-5">
           <legend className="font-[family-name:var(--font-display)] px-2 text-xl">{t(section)}</legend>
+          <div className="mb-3 flex justify-end">
+            <ReadAloud
+              lang={lang}
+              label={t("Listen")}
+              text={[t(section), ...scheme.applicationSchema.filter((f) => f.section === section).map((f) => t(f.label))].join(". ")}
+            />
+          </div>
           <div className="grid gap-4 md:grid-cols-2">
             {scheme.applicationSchema
               .filter((f) => f.section === section)
@@ -153,13 +161,23 @@ export function DynamicForm({ scheme, lang, issued }: { scheme: SchemeConfig; la
                       ))}
                     </select>
                   ) : (
+                    <span className="flex gap-2">
                     <input
                       name={field.id}
-                      type={field.type === "number" || field.type === "currency" ? "number" : field.id === "mobile" ? "tel" : field.type}
-                      inputMode={field.type === "number" || field.type === "currency" ? "numeric" : field.id === "mobile" ? "tel" : undefined}
+                      type={field.type === "number" || field.type === "currency" ? "number" : field.id === "mobile" ? "tel" : field.id === "aadhaarNumber" ? "text" : field.type}
+                      inputMode={field.type === "number" || field.type === "currency" || field.id === "aadhaarNumber" ? "numeric" : field.id === "mobile" ? "tel" : undefined}
+                      autoComplete={field.id === "aadhaarNumber" ? "off" : undefined}
                       required={field.required}
                       className="field-input"
                     />
+                    {field.type !== "date" ? (
+                      <VoiceInput
+                        targetName={field.id}
+                        lang={lang}
+                        digitsOnly={field.type === "number" || field.type === "currency" || field.id === "mobile" || field.id === "aadhaarNumber"}
+                      />
+                    ) : null}
+                    </span>
                   )}
                 </label>
               ))}
@@ -178,8 +196,8 @@ export function DynamicForm({ scheme, lang, issued }: { scheme: SchemeConfig; la
               <li key={doc.id} className="py-3">
                 <div className="flex flex-wrap items-baseline justify-between gap-2">
                   <span className="font-medium">
-                    {doc.label}{" "}
-                    <em className={`not-italic text-xs ${doc.mandatory ? "text-[color:var(--accent)]" : "text-[color:var(--muted)]"}`}>
+                    {t(doc.label)}{" "}
+                    <em className={`not-italic text-xs ${doc.mandatory ? "font-semibold text-[color:var(--danger)]" : "text-[color:var(--muted)]"}`}>
                       {t(doc.mandatory ? "mandatory" : "optional")}
                     </em>
                   </span>

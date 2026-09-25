@@ -3,6 +3,7 @@ import { Shell } from "@/components/Shell";
 import { requireRole } from "@/lib/auth";
 import { DIGILOCKER_ISSUABLE, fetchIssued } from "@/lib/digilocker";
 import { humanizeSelectionModel } from "@/lib/format";
+import { t } from "@/lib/i18n";
 import { getLang } from "@/lib/lang";
 import { schemeByCode } from "@/schemes/registry";
 import { redirect } from "next/navigation";
@@ -19,8 +20,8 @@ export default async function ApplyPage({ params }: { params: Promise<{ code: st
       <p className="meta">
         {scheme.version} · selection: {humanizeSelectionModel(scheme.selectionModel.type)} · {scheme.selectionModel.citation.sourceDocument}
       </p>
-      <h1 className="font-[family-name:var(--font-display)] mb-2 text-3xl">{scheme.name}</h1>
-      <p className="mb-8 max-w-3xl text-sm text-[color:var(--muted)]">{scheme.selectionCharacter}</p>
+      <h1 className="font-[family-name:var(--font-display)] mb-2 text-3xl">{t(lang, scheme.name)}</h1>
+      <p className="mb-8 max-w-3xl text-sm text-[color:var(--muted)]">{t(lang, scheme.selectionCharacter)}</p>
       {scheme.conflicts.length ? (
         <aside className="card card-accent-warn mb-6 p-4">
           <p className="font-semibold">Stored policy conflicts</p>

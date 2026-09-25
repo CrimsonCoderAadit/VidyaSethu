@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 export default async function EvidenceVaultPage() {
   const user = await requireRole(["AUDITOR"]);
   if (!user) redirect("/");
-  const db = loadDb();
+  const db = (await loadDb());
   const rows = db.applications
     .flatMap((app) => app.documents.map((doc) => ({ app, doc })))
     .sort((a, b) => a.doc.trust.localeCompare(b.doc.trust));

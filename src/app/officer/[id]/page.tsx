@@ -20,7 +20,7 @@ export default async function OfficerCase({ params }: { params: Promise<{ id: st
   const user = await requireRole(["MOTA", "AUDITOR"]);
   if (!user) redirect("/");
   const { id } = await params;
-  const db = loadDb();
+  const db = (await loadDb());
   const app = db.applications.find((a) => a.id === id);
   if (!app) notFound();
   const scheme = schemeByCode(app.schemeCode);
@@ -50,6 +50,27 @@ export default async function OfficerCase({ params }: { params: Promise<{ id: st
       <section className="card mb-6 p-5">
         <h2 className="mb-4 font-semibold">Workflow position</h2>
         <StagePipeline stages={scheme.workflow} current={app.status} />
+      </section>
+
+      <section className={`card mb-6 p-5 ${app.dedup?.length ? "card-accent-warn" : ""}`}>
+        <h2 className="font-semibold">Duplicate check: MoTA schemes + NSP</h2>
+        {!app.identityHash ? (
+          <p className="mt-2 text-sm text-[color:var(--muted)]">No Aadhaar on this file (filed before dedup was enabled).</p>
+        ) : app.dedup?.length ? (
+          <ul className="mt-2 space-y-2 text-sm">
+            {app.dedup.map((d, i) => (
+              <li key={i}>
+                <span className="stamp mr-2" style={{ color: "var(--danger)" }}>{d.kind.replace("_", " ")}</span>
+                {d.message}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="mt-2 text-sm" style={{ color: "var(--ok)" }}>
+            ✓ No other active MoTA scholarship and no NSP match for Aadhaar XXXX-XXXX-{app.aadhaarLast4}.
+          </p>
+        )}
+        <p className="meta mt-2">Matched on a keyed hash of the Aadhaar. The number itself is never stored.</p>
       </section>
 
       <div className="grid gap-6 lg:grid-cols-2">
@@ -140,7 +161,7 @@ export default async function OfficerCase({ params }: { params: Promise<{ id: st
                       await correctFactAction(app.id, fact.field, String(fd.get("value") ?? ""));
                     }}
                   >
-                    <input name="value" defaultValue={String(fact.value ?? "")} className="field-input py-1" />
+                    <input name="value" aria-label={`Corrected ${humanizeField(fact.field)}`} defaultValue={String(fact.value ?? "")} className="field-input py-1" />
                     <button className="text-[color:var(--primary)] hover:underline">Correct</button>
                   </form>
                 </div>
@@ -212,7 +233,7 @@ export default async function OfficerCase({ params }: { params: Promise<{ id: st
           >
             <h2 className="font-semibold">Selective re-verification</h2>
             <p className="mt-2 text-sm text-[color:var(--muted)]">Re-check only the named fields. Do not re-open the whole file.</p>
-            <input name="fields" defaultValue="fullName,familyIncome" className="field-input mt-3" />
+            <input name="fields" aria-label="Fields to re-verify (comma separated)" defaultValue="fullName,familyIncome" className="field-input mt-3" />
             <button className="btn-outline mt-3 px-4 py-2 text-sm font-semibold">Re-verify named fields</button>
           </form>
         </div>

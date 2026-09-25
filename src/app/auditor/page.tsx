@@ -7,7 +7,7 @@ import { redirect } from "next/navigation";
 export default async function AuditorPage() {
   const user = await requireRole(["AUDITOR"]);
   if (!user) redirect("/");
-  const db = loadDb();
+  const db = (await loadDb());
   const actorsCount = new Set(db.audit.map((e) => e.actorId)).size;
   const decisions = db.audit.filter((e) => e.action === "DECISION").length;
 

@@ -1,5 +1,6 @@
 import { EligibilityPanel } from "@/components/EligibilityPanel";
 import { Shell, Stamp } from "@/components/Shell";
+import { ReadAloud } from "@/components/Voice";
 import { StagePipeline } from "@/components/StagePipeline";
 import { computeEntitlement } from "@/engine/eligibility";
 import { confirmJoiningAction, raiseAppealAction, recoverDocumentAction, requestRenewalAction, resolveDeficiencyAction } from "@/lib/actions";
@@ -21,11 +22,11 @@ const AWARD_LABELS: Record<string, string> = {
   COMPLETED: "Completed",
 };
 
-export default async function ApplicationDetail({ params }: { params: Promise<{ id: string }> }) {
+export default async function ApplicationDetail({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ dup?: string }> }) {
   const user = await requireRole(["APPLICANT"]);
   if (!user) redirect("/");
   const { id } = await params;
-  const db = loadDb();
+  const db = (await loadDb());
   const { t, lang } = await getT();
   const app = db.applications.find((a) => a.id === id && a.applicantId === user.id);
   if (!app) notFound();
@@ -39,12 +40,25 @@ export default async function ApplicationDetail({ params }: { params: Promise<{ 
 
   return (
     <Shell user={user}>
+      {(await searchParams).dup ? (
+        <p className="card card-accent-warn mb-4 p-4 text-sm font-semibold" role="status">
+          You already have an active application for this scheme this year. Here it is. A second one was not created.
+        </p>
+      ) : null}
       <p className="meta">{app.id}</p>
       <div className="mb-2 flex flex-wrap items-center gap-3">
         <h1 className="font-[family-name:var(--font-display)] text-3xl">{scheme.shortName}</h1>
         <Stamp>{t(humanizeEnum(app.status))}</Stamp>
         <Stamp tone="rule">{hitlLabel(app.hitlLevel)}</Stamp>
       </div>
+      <ReadAloud
+        lang={lang}
+        label={t("Listen")}
+        text={[
+          `${scheme.shortName}. ${t("Your application is at")}: ${t(humanizeEnum(app.status))}.`,
+          ...(openDefs.length ? [`${t("Action required")}.`, ...openDefs.map((d, i) => translated[i] ?? d.reason)] : [t("Nothing pending from you.")]),
+        ].join(" ")}
+      />
 
       <section className="card mt-6 p-5">
         <h2 className="mb-4 font-semibold">{t("Application progress")}</h2>

@@ -9,7 +9,7 @@ import { redirect } from "next/navigation";
 export default async function SelectionPage() {
   const user = await requireRole(["MOTA"]);
   if (!user) redirect("/");
-  const runs = loadDb().selectionRuns;
+  const runs = (await loadDb()).selectionRuns;
 
   return (
     <Shell user={user}>

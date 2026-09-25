@@ -11,7 +11,7 @@ import { redirect } from "next/navigation";
 export default async function InoPage() {
   const user = await requireRole(["INO"]);
   if (!user) redirect("/");
-  const db = loadDb();
+  const db = (await loadDb());
   const apps = db.applications.filter((a) => a.status === "INSTITUTION_VERIFICATION");
   const motaEmail = roleContact(db.users, "MOTA");
 

@@ -10,7 +10,7 @@ import { redirect } from "next/navigation";
 export default async function OfficerQueue() {
   const user = await requireRole(["MOTA"]);
   if (!user) redirect("/");
-  const db = loadDb();
+  const db = (await loadDb());
   const apps = db.applications.filter((a) =>
     ["MOTA_SCRUTINY", "ELIGIBILITY", "SELECTION", "AUTHORISED_DECISION", "DEFICIENCY"].includes(a.status),
   );

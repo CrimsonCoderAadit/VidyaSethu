@@ -3,6 +3,7 @@
 import { evaluateEligibility, computeEntitlement } from "@/engine/eligibility";
 import { ingestDocument, ingestFromDigiLocker, ingestWithCondition, openRecoveries, type CaptureCondition } from "@/engine/documents";
 import { consistencyChecks, routeHitl } from "@/engine/intelligence";
+import { checkDuplicates, identityHash, normalizeAadhaar } from "@/engine/dedup";
 import { runSelection } from "@/engine/selection";
 import type { Fact, WorkflowStage } from "@/engine/types";
 import { schemeByCode } from "@/schemes/registry";
@@ -15,12 +16,12 @@ import { DIGILOCKER_ISSUABLE, fetchIssued } from "./digilocker";
 import { handleInbound, queueApplicantAlert } from "./bot";
 import { asLang, LANG_COOKIE } from "./i18n";
 import { loadDb, mutateDb, resetDb } from "./db";
-import type { UserRecord } from "./models";
+import type { Database, UserRecord } from "./models";
 import { applyInoDecision } from "./ino";
 import { recomputeApplication } from "./pipeline";
 import { roleHome } from "./roles";
 
-function audit(db: ReturnType<typeof loadDb>, actor: { id: string; name: string }, action: string, detail: string, applicationId?: string) {
+function audit(db: Database, actor: { id: string; name: string }, action: string, detail: string, applicationId?: string) {
   db.audit.unshift({
     id: `aud-${Date.now()}`,
     at: new Date().toISOString(),
@@ -32,7 +33,7 @@ function audit(db: ReturnType<typeof loadDb>, actor: { id: string; name: string 
   });
 }
 
-function notify(db: ReturnType<typeof loadDb>, userId: string, title: string, body: string) {
+function notify(db: Database, userId: string, title: string, body: string) {
   const target = db.users.find((u) => u.id === userId);
   if (target) queueApplicantAlert(db, target, title, body);
   db.notifications.unshift({
@@ -45,14 +46,14 @@ function notify(db: ReturnType<typeof loadDb>, userId: string, title: string, bo
   });
 }
 
-function notifyRole(db: ReturnType<typeof loadDb>, role: UserRecord["role"], title: string, body: string) {
+function notifyRole(db: Database, role: UserRecord["role"], title: string, body: string) {
   for (const u of db.users.filter((u) => u.role === role)) notify(db, u.id, title, body);
 }
 
 export async function loginAction(formData: FormData) {
   const email = String(formData.get("email") ?? "");
   const password = String(formData.get("password") ?? "");
-  const user = loadDb().users.find((u) => u.email === email && u.password === password);
+  const user = (await loadDb()).users.find((u) => u.email === email && u.password === password);
   if (!user) redirect("/?error=unknown");
   (await cookies()).set(COOKIE, user.id, { httpOnly: true, sameSite: "lax", path: "/" });
   redirect(roleHome(user.role));
@@ -78,7 +79,7 @@ export async function createUserAction(formData: FormData) {
   const stateCode = String(formData.get("stateCode") ?? "").trim().toUpperCase() || undefined;
   if (!name || !email || !role) redirect("/admin?error=missing");
 
-  mutateDb((db) => {
+  await mutateDb((db) => {
     if (db.users.some((u) => u.email === email)) return;
     const actor = db.users.find((u) => u.id === actorId);
     const user: UserRecord = {
@@ -98,7 +99,7 @@ export async function createUserAction(formData: FormData) {
 
 export async function deleteUserAction(userId: string) {
   const actorId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const target = db.users.find((u) => u.id === userId);
     if (!target || target.id === actorId) return;
     db.users = db.users.filter((u) => u.id !== userId);
@@ -109,12 +110,12 @@ export async function deleteUserAction(userId: string) {
 }
 
 export async function resetDemoAction() {
-  resetDb();
+  await resetDb();
   redirect("/");
 }
 
 export async function submitApplicationAction(schemeCode: string, formData: FormData) {
-  const db = loadDb();
+  const db = (await loadDb());
   const sessionId = (await cookies()).get(COOKIE)?.value;
   const user = db.users.find((u) => u.id === sessionId);
   if (!user) redirect("/");
@@ -126,6 +127,26 @@ export async function submitApplicationAction(schemeCode: string, formData: Form
     if (field.type === "number" || field.type === "currency") value = raw ? Number(raw) : null;
     return { field: field.id, value, source: "APPLICANT", confidence: 1, verified: true };
   });
+
+  // Aadhaar: hash immediately, keep only the last 4 digits, mask the fact.
+  const aadhaarFact = facts.find((f) => f.field === "aadhaarNumber");
+  const aadhaar = normalizeAadhaar(String(aadhaarFact?.value ?? ""));
+  const idHash = aadhaar ? identityHash(aadhaar) : undefined;
+  if (aadhaarFact) aadhaarFact.value = aadhaar ? `XXXX-XXXX-${aadhaar.slice(-4)}` : null;
+  const dedup = idHash
+    ? checkDuplicates({
+        hash: idHash,
+        schemeCode: scheme.code,
+        academicYear: scheme.academicYear,
+        apps: db.applications,
+        schemeName: (c) => schemeByCode(c).shortName,
+      })
+    : [];
+  const exact = dedup.find((d) => d.kind === "DUPLICATE");
+  if (exact?.conflictingId) {
+    const existing = db.applications.find((a) => a.id === exact.conflictingId);
+    redirect(existing?.applicantId === user.id ? `/applicant/applications/${exact.conflictingId}?dup=1` : "/applicant?dup=1");
+  }
 
   const stateCode = String(facts.find((f) => f.field === "domicileState")?.value ?? user.stateCode ?? "JH");
   const applicantName = String(facts.find((f) => f.field === "fullName")?.value || user.name);
@@ -171,6 +192,10 @@ export async function submitApplicationAction(schemeCode: string, formData: Form
     d.applicationId = id;
   });
 
+  if (dedup.length) {
+    hitl.reasons.unshift(...dedup.map((d) => d.message));
+    if (hitl.level !== "L3") hitl.level = "L2";
+  }
   if (assisted.length) {
     hitl.reasons.push(...assisted.map((d) => `Handwritten ${humanizeEnum(d.documentType)}: compare ${d.recovery!.typedFields?.length ?? 0} typed field(s) against the photo.`));
     if (hitl.level === "L0") hitl.level = "L1";
@@ -185,7 +210,7 @@ export async function submitApplicationAction(schemeCode: string, formData: Form
   // any officer spends time on the file.
   const nextStage: WorkflowStage = applicantFixes.length ? "DEFICIENCY" : routedStage;
 
-  mutateDb((store) => {
+  await mutateDb((store) => {
     store.applications.unshift({
       id,
       schemeCode: scheme.code,
@@ -202,6 +227,9 @@ export async function submitApplicationAction(schemeCode: string, formData: Form
       hitlLevel: hitl.level,
       hitlReasons: hitl.reasons,
       returnStage: applicantFixes.length ? routedStage : undefined,
+      identityHash: idHash,
+      aadhaarLast4: aadhaar?.slice(-4),
+      dedup,
       deficiencies: docs
         .filter((d) => d.recovery && d.recovery.path !== "ASSISTED_ENTRY")
         .map((d, i) => ({
@@ -241,7 +269,7 @@ export async function submitApplicationAction(schemeCode: string, formData: Form
 
 export async function officerDecisionAction(applicationId: string, decision: "APPROVED" | "REJECTED" | "DEFERRED", note: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const app = db.applications.find((a) => a.id === applicationId);
     if (!user || !app) return;
@@ -278,7 +306,7 @@ export async function officerDecisionAction(applicationId: string, decision: "AP
 
 export async function confirmFactAction(applicationId: string, field: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const app = db.applications.find((a) => a.id === applicationId);
     if (!user || !app) return;
@@ -295,7 +323,7 @@ export async function confirmFactAction(applicationId: string, field: string) {
 
 export async function correctFactAction(applicationId: string, field: string, value: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const app = db.applications.find((a) => a.id === applicationId);
     if (!user || !app) return;
@@ -334,7 +362,7 @@ export async function correctFactAction(applicationId: string, field: string, va
 export async function selectiveReverifyAction(applicationId: string, fieldsCsv: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
   const fields = fieldsCsv.split(",").map((s) => s.trim()).filter(Boolean);
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const app = db.applications.find((a) => a.id === applicationId);
     if (!user || !app) return;
@@ -363,7 +391,7 @@ export async function selectiveReverifyAction(applicationId: string, fieldsCsv: 
 
 export async function raiseAppealAction(applicationId: string, reason: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const app = db.applications.find((a) => a.id === applicationId);
     if (!user || !app) return;
@@ -378,7 +406,7 @@ export async function raiseAppealAction(applicationId: string, reason: string) {
 
 export async function requestDeficiencyAction(applicationId: string, reason: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const app = db.applications.find((a) => a.id === applicationId);
     if (!user || !app) return;
@@ -398,7 +426,7 @@ export async function requestDeficiencyAction(applicationId: string, reason: str
 }
 
 export async function resolveDeficiencyAction(applicationId: string) {
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const app = db.applications.find((a) => a.id === applicationId);
     if (!app) return;
     app.deficiencies.forEach((d) => {
@@ -417,7 +445,7 @@ export async function resolveDeficiencyAction(applicationId: string) {
 
 export async function inoVerifyAction(applicationId: string, admit: boolean, note: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const app = db.applications.find((a) => a.id === applicationId);
     if (!user || !app) return;
@@ -427,7 +455,7 @@ export async function inoVerifyAction(applicationId: string, admit: boolean, not
 
 export async function stateRecommendAction(applicationId: string, note: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const app = db.applications.find((a) => a.id === applicationId);
     if (!user || !app) return;
@@ -439,7 +467,7 @@ export async function stateRecommendAction(applicationId: string, note: string) 
 
 export async function committeeScoreAction(applicationId: string, score: number, note: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const app = db.applications.find((a) => a.id === applicationId);
     if (!user || !app) return;
@@ -454,7 +482,7 @@ export async function committeeScoreAction(applicationId: string, score: number,
 
 export async function runSelectionAction(schemeCode: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const scheme = schemeByCode(schemeCode);
     const eligible = db.applications.filter(
@@ -468,7 +496,7 @@ export async function runSelectionAction(schemeCode: string) {
 
 export async function financeMarkPaidAction(awardId: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const award = db.awards.find((a) => a.id === awardId);
     if (!award) return;
@@ -485,7 +513,7 @@ export async function financeMarkPaidAction(awardId: string) {
 
 export async function financeMarkFailedAction(awardId: string, reason: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const award = db.awards.find((a) => a.id === awardId);
     if (!award) return;
@@ -498,7 +526,7 @@ export async function financeMarkFailedAction(awardId: string, reason: string) {
 
 export async function confirmJoiningAction(awardId: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const award = db.awards.find((a) => a.id === awardId);
     if (!user || !award) return;
@@ -516,7 +544,7 @@ export async function confirmJoiningAction(awardId: string) {
 
 export async function verifyMilestoneAction(awardId: string, milestoneId: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const award = db.awards.find((a) => a.id === awardId);
     const milestone = award?.milestones.find((m) => m.id === milestoneId);
@@ -529,7 +557,7 @@ export async function verifyMilestoneAction(awardId: string, milestoneId: string
 
 export async function requestRenewalAction(awardId: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const award = db.awards.find((a) => a.id === awardId);
     if (!user || !award) return;
@@ -548,7 +576,7 @@ export async function requestRenewalAction(awardId: string) {
 
 export async function decideRenewalAction(renewalId: string, decision: "APPROVED" | "DEFICIENT" | "REVIEW", note: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const renewal = db.renewals.find((r) => r.id === renewalId);
     if (!user || !renewal) return;
@@ -567,7 +595,7 @@ export async function decideRenewalAction(renewalId: string, decision: "APPROVED
 
 export async function markNotificationsReadAction() {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     for (const n of db.notifications) if (n.userId === userId) n.read = true;
   });
 }
@@ -581,7 +609,7 @@ export async function advancePolicyStatusAction(schemeCode: string) {
     "APPROVED",
     "PUBLISHED",
   ];
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const current = db.policyStatus[schemeCode] ?? "PUBLISHED";
     const idx = order.indexOf(current);
@@ -596,7 +624,7 @@ export async function botSendAction(channel: "WHATSAPP" | "SMS", formData: FormD
   const userId = (await cookies()).get(COOKIE)?.value;
   const text = String(formData.get("text") ?? "").trim();
   if (!text) return;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     if (!user?.mobile) return;
     handleInbound(db, user.mobile, text, channel);
@@ -606,7 +634,7 @@ export async function botSendAction(channel: "WHATSAPP" | "SMS", formData: FormD
 /** Applicant fixes an unreadable document: one-tap DigiLocker fetch, or a retaken photo. */
 export async function recoverDocumentAction(applicationId: string, docId: string, mode: "DIGILOCKER" | "RETAKE") {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const app = db.applications.find((a) => a.id === applicationId && a.applicantId === userId);
     const idx = app?.documents.findIndex((d) => d.id === docId) ?? -1;
@@ -644,7 +672,7 @@ export async function recoverDocumentAction(applicationId: string, docId: string
 /** Officer confirms a handwritten document matches the values the applicant typed. */
 export async function confirmAssistedAction(applicationId: string, docId: string) {
   const userId = (await cookies()).get(COOKIE)?.value;
-  mutateDb((db) => {
+  await mutateDb((db) => {
     const user = db.users.find((u) => u.id === userId);
     const app = db.applications.find((a) => a.id === applicationId);
     const doc = app?.documents.find((d) => d.id === docId);

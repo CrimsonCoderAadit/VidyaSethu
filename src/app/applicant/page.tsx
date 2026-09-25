@@ -14,7 +14,7 @@ import { redirect } from "next/navigation";
 export default async function ApplicantHome() {
   const user = await requireRole(["APPLICANT"]);
   if (!user) redirect("/");
-  const db = loadDb();
+  const db = (await loadDb());
   const { t } = await getT();
   const apps = db.applications.filter((a) => a.applicantId === user.id);
   const notes = db.notifications.filter((n) => n.userId === user.id);

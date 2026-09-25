@@ -20,6 +20,10 @@ export function recomputeApplication(app: ApplicationRecord) {
     institutionPending: institutionPending && app.status === "INSTITUTION_VERIFICATION",
     policyException: app.eligibility.outcome === "REVIEW_REQUIRED",
   });
+  if (app.dedup?.length) {
+    hitl.reasons.unshift(...app.dedup.map((d) => d.message));
+    if (hitl.level !== "L3") hitl.level = "L2";
+  }
   const assisted = app.documents.filter((d) => d.recovery?.path === "ASSISTED_ENTRY" && d.recovery.status === "OPEN");
   if (assisted.length) {
     hitl.reasons.push(...assisted.map((d) => `Handwritten ${d.documentType.replaceAll("_", " ").toLowerCase()}: compare ${d.recovery!.typedFields?.length ?? 0} typed field(s) against the photo.`));

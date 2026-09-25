@@ -13,7 +13,7 @@ import { redirect } from "next/navigation";
 export default async function TowerPage() {
   const user = await requireRole(["MOTA", "AUDITOR", "FINANCE", "STATE", "INO"]);
   if (!user) redirect("/");
-  const db = loadDb();
+  const db = (await loadDb());
   const byScheme = SCHEMES.map((s) => {
     const apps = db.applications.filter((a) => a.schemeCode === s.code);
     const pendingIno = apps.filter((a) => a.status === "INSTITUTION_VERIFICATION").length;
@@ -35,11 +35,13 @@ export default async function TowerPage() {
   const appeals = db.applications.filter((a) => a.isAppeal).length;
   const liveEligible = Object.fromEntries(byScheme.map(({ s, eligible }) => [s.code, eligible]));
   const forecasts = demoFundPlans(liveEligible).map((p) => forecastFund(p));
+  const dedupFlags = db.applications.filter((a) => a.dedup?.length).length;
   const allDocs = db.applications.flatMap((a) => a.documents);
   const docStats = [
     { label: "DigiLocker (no OCR)", value: allDocs.filter((d) => d.source === "DIGILOCKER").length },
     { label: "Auto-returned to applicant", value: allDocs.filter((d) => d.recovery && d.recovery.path !== "ASSISTED_ENTRY").length },
     { label: "Handwritten: field check", value: allDocs.filter((d) => d.recovery?.path === "ASSISTED_ENTRY").length },
+    { label: "Duplicate / double benefit", value: dedupFlags },
     { label: "Read by OCR", value: allDocs.filter((d) => !d.recovery && d.source !== "DIGILOCKER").length },
   ];
   const schemeNames = Object.fromEntries(SCHEMES.map((s) => [s.code, s.shortName]));

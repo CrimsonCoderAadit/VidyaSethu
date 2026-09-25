@@ -13,7 +13,7 @@ export default async function WhatsAppPage({ searchParams }: { searchParams: Pro
   if (!user) redirect("/");
   const { t } = await getT();
   const channel = (await searchParams).ch === "sms" ? "SMS" : "WHATSAPP";
-  const db = loadDb();
+  const db = (await loadDb());
   const firstApp = db.applications.find((a) => a.applicantId === user.id);
   const thread = db.outbox.filter((m) => m.userId === user.id && m.channel === channel).slice(0, 40).reverse();
   const wa = channel === "WHATSAPP";
@@ -35,7 +35,7 @@ export default async function WhatsAppPage({ searchParams }: { searchParams: Pro
               <span className="block text-xs text-white/70">{BOT_NUMBER} · {wa ? "WhatsApp" : "SMS"}</span>
             </span>
           </div>
-          <div className="flex h-[440px] flex-col gap-2 overflow-y-auto p-3" style={{ background: wa ? "#efeae2" : "#f4f5f7" }}>
+          <div role="log" aria-label="Conversation" tabIndex={0} className="flex h-[440px] flex-col gap-2 overflow-y-auto p-3" style={{ background: wa ? "#efeae2" : "#f4f5f7" }}>
             {thread.length === 0 ? (
               <p className="m-auto max-w-[80%] rounded-lg bg-white/80 p-3 text-center text-xs text-[color:var(--muted)]">
                 Send HI to start. Alerts from officers will also appear here.
@@ -48,7 +48,7 @@ export default async function WhatsAppPage({ searchParams }: { searchParams: Pro
                 style={m.direction === "IN" ? { background: wa ? "#d9fdd3" : "#dbe7f5" } : undefined}
               >
                 {m.body}
-                <span className="mt-1 block text-right text-[10px] text-black/45">
+                <span className="mt-1 block text-right text-[10px] text-black/65">
                   {new Date(m.at).toLocaleTimeString("en-IN", { hour: "numeric", minute: "2-digit" })}
                   {m.direction === "OUT" && m.body.startsWith("🔔") ? " · alert" : ""}
                 </span>

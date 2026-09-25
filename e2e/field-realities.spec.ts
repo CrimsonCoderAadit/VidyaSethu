@@ -46,6 +46,7 @@ test("DigiLocker + OCR failure: unreadable photo auto-returns to applicant, one-
   await page.getByLabel(/^Date of birth/).fill("2011-02-03");
   await page.getByLabel(/^Gender/).selectOption("FEMALE");
   await page.getByLabel(/^Mobile/).fill("9876543210");
+  await page.getByLabel(/^Aadhaar number/).fill("5678 5678 5678");
   await page.getByLabel(/^Scheduled Tribe status/).selectOption("true");
   await page.getByLabel(/^Domicile State/).selectOption("JH");
   await page.getByLabel(/^Family income/).fill("180000");
@@ -110,4 +111,34 @@ test("control tower: predictive fund runway", async ({ page }) => {
   await expect(page.getByRole("heading", { name: /Predictive fund runway/ })).toBeVisible();
   await expect(page.getByText("Shortfall").first()).toBeVisible();
   await expect(page.getByText("Runs out").first()).toBeVisible();
+});
+
+test("Aadhaar dedup: double benefit flagged to officer, exact duplicate blocked, raw Aadhaar never stored", async ({ page }) => {
+  const fill = async () => {
+    await page.goto("/applicant/apply/PRE_MATRIC");
+    await page.getByLabel(/^Full name/).fill("Meena Xaxa");
+    await page.getByLabel(/^Date of birth/).fill("2011-02-03");
+    await page.getByLabel(/^Gender/).selectOption("FEMALE");
+    await page.getByLabel(/^Mobile/).fill("9876543210");
+    await page.getByLabel(/^Aadhaar number/).fill("1234 1234 1234");
+    await page.getByLabel(/^Scheduled Tribe status/).selectOption("true");
+    await page.getByLabel(/^Domicile State/).selectOption("JH");
+    await page.getByLabel(/^Family income/).fill("180000");
+    await page.getByLabel(/^Class \*/).selectOption("IX");
+    await page.getByLabel(/^Application type/).selectOption("FRESH");
+    await page.getByRole("button", { name: "Submit application" }).click();
+    await page.waitForURL(/\/applicant\/applications\//);
+  };
+  await loginAs(page, "APPLICANT", "applicant@mota.demo");
+  await fill();
+  const id = page.url().split("/").pop()!.split("?")[0];
+  // Filing the same scheme again with the same Aadhaar lands on the existing file, no new one.
+  await fill();
+  await expect(page.getByText("You already have an active application for this scheme this year")).toBeVisible();
+  expect(page.url()).toContain(id);
+
+  await loginAs(page, "MOTA");
+  await page.goto(`/officer/${id}`);
+  await expect(page.getByText("DOUBLE BENEFIT").first()).toBeVisible();
+  await expect(page.getByText("123412341234")).toHaveCount(0);
 });

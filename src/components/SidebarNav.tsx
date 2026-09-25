@@ -23,6 +23,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useLiteMode } from "./LiteMode";
 
 const ICONS: Record<IconName, LucideIcon> = {
   LayoutDashboard,
@@ -90,6 +91,8 @@ export function SidebarNav({ links }: { links: NavItem[] }) {
 /** Phone layout: a fixed bottom tab bar with thumb-sized (≥48px) targets instead of the sidebar. */
 export function BottomNav({ links }: { links: NavItem[] }) {
   const pathname = usePathname();
+  // On phones / slow networks, don't spend scarce bandwidth prefetching every tab up front.
+  const lite = useLiteMode();
   if (links.length < 2) return null;
   return (
     <nav
@@ -104,6 +107,7 @@ export function BottomNav({ links }: { links: NavItem[] }) {
           <Link
             key={l.href}
             href={l.href}
+            prefetch={lite === false ? undefined : false}
             aria-current={active ? "page" : undefined}
             className="flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] font-medium"
             style={{ color: active ? "var(--indigo)" : "var(--muted)" }}

@@ -8,7 +8,7 @@ import { redirect } from "next/navigation";
 export default async function RenewalsPage() {
   const user = await requireRole(["MOTA"]);
   if (!user) redirect("/");
-  const db = loadDb();
+  const db = (await loadDb());
   const pending = db.renewals.filter((r) => r.status === "PENDING");
 
   return (

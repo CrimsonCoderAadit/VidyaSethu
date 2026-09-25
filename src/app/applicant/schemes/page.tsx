@@ -21,12 +21,12 @@ export default async function SchemesPage() {
           <article className="card p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
-                <h2 className="font-[family-name:var(--font-display)] text-xl">{s.name}</h2>
-                <p className="text-sm text-[color:var(--muted)]">{s.implementation}</p>
+                <h2 className="font-[family-name:var(--font-display)] text-xl">{t(s.name)}</h2>
+                <p className="text-sm text-[color:var(--muted)]">{t(s.implementation)}</p>
               </div>
               <Stamp tone="rule">{humanizeSelectionModel(s.selectionModel.type)}</Stamp>
             </div>
-            <p className="mt-3 text-sm">{s.selectionCharacter}</p>
+            <p className="mt-3 text-sm">{t(s.selectionCharacter)}</p>
             <p className="meta mt-2">
               {s.version} · {s.academicYear} · {s.officialSources[0]}
             </p>

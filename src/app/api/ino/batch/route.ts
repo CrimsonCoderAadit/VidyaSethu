@@ -11,7 +11,7 @@ const SHOWN_FACTS = ["fullName", "gender", "domicileState", "course", "courseGro
 export async function GET() {
   const user = await requireRole(["INO"]);
   if (!user) return Response.json({ error: "forbidden" }, { status: 403 });
-  const db = loadDb();
+  const db = (await loadDb());
   const apps = db.applications
     .filter((a) => a.status === "INSTITUTION_VERIFICATION")
     .map((a) => ({

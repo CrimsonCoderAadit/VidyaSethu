@@ -2,7 +2,8 @@ import type { FundForecast } from "@/engine/forecast";
 
 const RISK_STYLE: Record<FundForecast["risk"], { label: string; color: string; bg: string }> = {
   HIGH: { label: "Shortfall", color: "var(--danger)", bg: "var(--danger-bg)" },
-  WATCH: { label: "Watch", color: "var(--warn)", bg: "var(--warn-bg)" },
+  // Darker amber than --warn: small text on the wash must clear 4.5:1 contrast.
+  WATCH: { label: "Watch", color: "#8a5200", bg: "var(--warn-bg)" },
   OK: { label: "On track", color: "var(--ok)", bg: "var(--ok-bg)" },
 };
 

@@ -15,7 +15,7 @@ export default async function PolicyDetail({ params }: { params: Promise<{ code:
   const { code } = await params;
   const scheme = schemeByCode(code);
   const issues = qaScheme(scheme);
-  const db = loadDb();
+  const db = (await loadDb());
   const status = db.policyStatus[code] ?? scheme.status;
   const nextStatus = LIFECYCLE[Math.min(LIFECYCLE.indexOf(status) + 1, LIFECYCLE.length - 1)];
   const atEnd = status === "PUBLISHED";

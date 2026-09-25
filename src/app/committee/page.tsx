@@ -13,7 +13,7 @@ function fact(app: { facts: { field: string; value: unknown }[] }, field: string
 export default async function CommitteePage() {
   const user = await requireRole(["COMMITTEE"]);
   if (!user) redirect("/");
-  const db = loadDb();
+  const db = (await loadDb());
   const nos = schemeByCode("NOS");
   const apps = db.applications.filter(
     (a) => a.schemeCode === "NOS" && a.eligibility?.outcome === "ELIGIBLE" && a.committeeScore === undefined,

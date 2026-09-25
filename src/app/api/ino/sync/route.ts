@@ -32,7 +32,7 @@ export async function POST(req: Request) {
   if (!parsed.success) return Response.json({ error: "invalid body" }, { status: 400 });
   const { batchId, decisions } = parsed.data;
 
-  const results = mutateDb((db) =>
+  const results = await mutateDb((db) =>
     decisions.map((d) => {
       const app = db.applications.find((a) => a.id === d.id);
       if (!app) return { id: d.id, status: "conflict" as const, reason: "Application no longer exists." };

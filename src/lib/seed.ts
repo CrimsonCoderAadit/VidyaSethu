@@ -3,6 +3,7 @@ import { ingestDocument } from "@/engine/documents";
 import { consistencyChecks, routeHitl } from "@/engine/intelligence";
 import type { Fact } from "@/engine/types";
 import { NFST, NOS, POST_MATRIC, PRE_MATRIC, TOP_CLASS, schemeByCode } from "@/schemes/registry";
+import { identityHash } from "@/engine/dedup";
 import { handleInbound, queueApplicantAlert } from "./bot";
 import type { ApplicationRecord, Database, UserRecord } from "./models";
 
@@ -538,6 +539,13 @@ export function seedDatabase(): Database {
     },
     outbox: [],
   };
+
+  // Meena's Aadhaar (demo 1234 1234 1234) as a keyed hash, so a new filing by her trips dedup.
+  const meenaHash = identityHash("123412341234");
+  for (const a of db.applications.filter((x) => x.applicantId === "u-app")) {
+    a.identityHash = meenaHash;
+    a.aadhaarLast4 = "1234";
+  }
 
   // Demo WhatsApp history for Meena (Hindi): a proactive alert, then a status query.
   const meena = db.users.find((u) => u.id === "u-app")!;

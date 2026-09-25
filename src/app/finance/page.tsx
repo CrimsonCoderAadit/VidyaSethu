@@ -11,7 +11,7 @@ import { redirect } from "next/navigation";
 export default async function FinancePage() {
   const user = await requireRole(["FINANCE"]);
   if (!user) redirect("/");
-  const db = loadDb();
+  const db = (await loadDb());
   const awards = db.awards;
   const pending = awards.filter((a) => a.status !== "PAID").length;
 

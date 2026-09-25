@@ -12,7 +12,7 @@ import { redirect } from "next/navigation";
 export default async function StatePage() {
   const user = await requireRole(["STATE"]);
   if (!user) redirect("/");
-  const db = loadDb();
+  const db = (await loadDb());
   const apps = db.applications.filter(
     (a) => a.stateCode === user.stateCode && ["PRE_MATRIC", "POST_MATRIC"].includes(a.schemeCode) && a.status === "STATE_VERIFICATION",
   );

@@ -35,6 +35,7 @@ const personal: ApplicationField[] = [
     { value: "OTHER", label: "Other" },
   ] },
   { id: "mobile", label: "Mobile (Aadhaar-linked)", section: "Personal", type: "text", required: true },
+  { id: "aadhaarNumber", label: "Aadhaar number", section: "Personal", type: "text", required: true, help: "Used only for a one-way duplicate check across schemes and NSP. The number itself is never stored." },
   { id: "stStatus", label: "Scheduled Tribe status (domicile State/UT)", section: "Category", type: "boolean", required: true, evidenceDocument: "ST_CERTIFICATE" },
   { id: "domicileState", label: "Domicile State/UT", section: "Category", type: "select", required: true, options: [
     { value: "JH", label: "Jharkhand" },

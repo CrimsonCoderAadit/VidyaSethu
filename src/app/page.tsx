@@ -9,7 +9,7 @@ import { APP_NAME, APP_TAGLINE } from "@/lib/roles";
 import { GraduationCap } from "lucide-react";
 
 export default async function LoginPage() {
-  const users = loadDb().users;
+  const users = (await loadDb()).users;
   const { lang, t } = await getT();
 
   return (

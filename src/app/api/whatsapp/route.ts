@@ -61,7 +61,7 @@ export async function POST(req: Request) {
     const form = new URLSearchParams(await req.text());
     const from = form.get("From") ?? "";
     const channel = from.startsWith("whatsapp:") ? "WHATSAPP" : "SMS";
-    const reply = mutateDb((db) => handleInbound(db, from, form.get("Body") ?? "", channel));
+    const reply = await mutateDb((db) => handleInbound(db, from, form.get("Body") ?? "", channel));
     return new Response(`<?xml version="1.0" encoding="UTF-8"?><Response><Message>${xml(reply)}</Message></Response>`, {
       headers: { "Content-Type": "text/xml" },
     });
@@ -81,7 +81,7 @@ export async function POST(req: Request) {
     const entries = (json.entry as { changes: { value: { messages?: MetaMsg[] } }[] }[]) ?? [];
     for (const m of entries.flatMap((e) => e.changes.flatMap((c) => c.value.messages ?? []))) {
       if (m.type !== "text" || !m.text) continue;
-      const reply = mutateDb((db) => handleInbound(db, m.from, m.text!.body, "WHATSAPP"));
+      const reply = await mutateDb((db) => handleInbound(db, m.from, m.text!.body, "WHATSAPP"));
       await sendViaGraph(m.from, reply);
     }
     return Response.json({ ok: true });
@@ -92,6 +92,6 @@ export async function POST(req: Request) {
   const text = String(json.text ?? "");
   if (!from || !text) return Response.json({ error: "from and text are required" }, { status: 400 });
   const channel = json.channel === "SMS" ? "SMS" : "WHATSAPP";
-  const reply = mutateDb((db) => handleInbound(db, from, text, channel));
+  const reply = await mutateDb((db) => handleInbound(db, from, text, channel));
   return Response.json({ reply });
 }
